@@ -18,6 +18,13 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public bool DefaultsLoaded { get; set; }
 
+    /// <summary>
+    /// Gets or sets the version of the built-in list already merged into <see cref="Stations"/>.
+    /// After an update, built-in stations added in a newer version are added automatically;
+    /// older ones are never re-added, so removing a station sticks. Empty means 0.0.1.
+    /// </summary>
+    public string DefaultsVersion { get; set; } = string.Empty;
+
     /// <summary>Gets or sets the stations, in display order.</summary>
     public List<StationConfig> Stations { get; set; } = new();
 

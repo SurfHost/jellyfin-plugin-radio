@@ -296,6 +296,13 @@ Spike build v0.0.x is installed by hand and never published in the manifest. It 
   own station records. Each was verified by its icy-name (StreamTheWorld) or redirect target mount (`Qmusic_nl_nonstop.mp3`,
   `Joe_nl_nonstop.mp3`; DPG sends an empty icy-name) and its MP3 frame headers. They sit right after their main station (group "Non-stop");
   "Add missing Dutch stations" inserts a new built-in station after the built-in station it follows, so existing installs get the same order.
+- **0.0.3: built-in stations merge on update.** Each entry in DefaultStations.json has `addedIn`; the settings record `DefaultsVersion`
+  (empty = 0.0.1). At start-up RadioSync adds built-in stations newer than that version that are not in the list yet (after their
+  predecessor) and records the latest version, so removed stations are never re-added. A first save from the page on a fresh install
+  stamps the current version (Plugin.UpdateConfiguration).
+- **Cast transfer delay (S5):** jellyfin-web passes the local position when playback moves to Cast, and receiver v1.3.1 always seeks
+  to it (StreamType BUFFERED), so a live stream waits as long as it had played. No MediaSource field changes that; documented workaround
+  (connect first). Fix belongs upstream in jellyfin-chromecast, or later in the Phase 5 injected script.
 - **No Artists line yet.** `ChannelItemInfo.Artists = [Group]` is left out until spike S9 shows whether it adds entries to the global artist
   list. The group is shown in the overview instead ("NPO · Live · MP3 192 kbps").
 - **RadioSync locks Name and Overview** (`LockedFields`) on every station item, so a later metadata refresh cannot undo a rename.

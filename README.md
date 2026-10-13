@@ -46,11 +46,11 @@ refuses it. This plugin makes stations real audio items instead.
 |---|---|
 | Jellyfin Web (browser) | Plays in the music player |
 | Jellyfin Desktop / Media Player | Expected to work (being verified) |
-| Jellyfin Android | Expected to work, including in the background (being verified) |
+| Jellyfin Android | Plays, also with the screen off (verified 2026-10-13) |
 | Jellyfin for iOS | Expected to work (being verified). Swiftfin has no music player; use the Jellyfin app |
-| Android TV | Not via the channel: the app plays only local audio files. A Live TV copy is planned |
+| Android TV | Not via the channel: the app (0.19) plays only local audio files and skips every station. A Live TV copy (video player, black screen) is being tested |
 | Android Auto | Planned via a "Radio" playlist (being verified) |
-| Chromecast / Nest speakers | Being verified |
+| Chromecast / Nest speakers / Nest Hub | Plays (verified from Edge to a Nest Hub Max). Connect to the Cast device **first**, then start the station: casting a station that is already playing makes the device wait as long as you had been listening |
 | Sonos via the DLNA plugin | Being verified |
 
 ## Requirements

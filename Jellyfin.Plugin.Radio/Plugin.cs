@@ -59,6 +59,34 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         return info;
     }
 
+    /// <inheritdoc />
+    public override void UpdateConfiguration(BasePluginConfiguration configuration)
+    {
+        if (configuration is PluginConfiguration incoming)
+        {
+            StampDefaultsVersion(Configuration, incoming);
+        }
+
+        base.UpdateConfiguration(configuration);
+    }
+
+    /// <summary>
+    /// The plugin page saves the built-in list it showed when the settings had none yet.
+    /// That list is the current one, so record its version; otherwise the next start would
+    /// treat it as the 0.0.1 list and re-add newer stations the admin just removed.
+    /// </summary>
+    /// <param name="current">The settings before the save.</param>
+    /// <param name="incoming">The settings being saved, changed in place.</param>
+    public static void StampDefaultsVersion(PluginConfiguration current, PluginConfiguration incoming)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+        ArgumentNullException.ThrowIfNull(incoming);
+        if (incoming.DefaultsLoaded && string.IsNullOrEmpty(incoming.DefaultsVersion) && !current.DefaultsLoaded)
+        {
+            incoming.DefaultsVersion = Stations.DefaultStations.LatestVersion;
+        }
+    }
+
     /// <summary>Drops a zero fourth part from a version: 0.1.0.0 becomes 0.1.0.</summary>
     /// <param name="version">The assembly version.</param>
     /// <returns>The version as meta.json writes it.</returns>

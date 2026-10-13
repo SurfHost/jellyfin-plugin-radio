@@ -51,8 +51,11 @@ Dashboard → Users → *user*:
 - **Android TV:** the Android TV app only plays local audio files, so the channel does not work there. Hide it from that account with
   **Hide the channel from** on the plugin page. Do not tick an administrator you use in the dashboard: Radio would then disappear from
   every user's Access tab, and saving a user there would remove their access to it.
-- **Casting:** cast from Chrome on `https://<your Jellyfin address>` or from the Jellyfin Android app (Play Store version). The Chromecast must
-  be able to reach that address from your LAN (split DNS or hairpin NAT).
+- **Casting (Chromecast, Nest Hub, Nest speakers):** connect to the Cast device **first**, then start the station. If a station is
+  already playing on your phone or PC when you switch to Cast, the app passes on how long you have been listening, and the Cast device
+  then reads the live stream until it reaches that point: it waits as long as you had been listening. Stuck? Stop playback on the Cast
+  device and start the station again while connected. Cast from Chrome or Edge on `https://<your Jellyfin address>` or from the Jellyfin
+  Android app (Play Store version); the Cast device must be able to reach that address from your LAN (split DNS or hairpin NAT).
 
 ## 5. Your own stations
 
@@ -75,4 +78,7 @@ Plugin page → **Add a station**: name, stream URL, optional group and logo, th
 | Radio is there but empty | The user blocks unrated channel content (step 3, Parental control). |
 | Playback fails at once | "Force transcoding of remote media sources" is on for that user (step 3), or the station is down (plugin page → Test on that station). |
 | A renamed station keeps its old name | Press **Sync now**; renames reach existing items on the next sync. |
+| Cast shows a time and keeps buffering | You switched to Cast while the station was playing. Stop it on the Cast device, then start the station again while connected. |
+| Android TV skips through all stations | Expected: the Android TV app only plays local audio files. See "Android TV" in step 4. |
+| New built-in stations missing after an update | Restart Jellyfin after updating the plugin; from 0.0.3 on, new built-in stations are added at start-up. |
 | One station silent, others fine | The broadcaster changed its stream. Plugin page → **Test** on that station shows the error; replace the URL. |

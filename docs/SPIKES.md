@@ -77,12 +77,12 @@ A stub script logs `ApiClient`, `NativeShell` and `navigator.mediaSession` in We
 | Check | Date | Versions | Result | Notes |
 |---|---|---|---|---|
 | S1 | | | | |
-| S2 | | | | |
+| S2 | 2026-10-13 | plugin 0.0.1, Android app (Play Store) | Pass (Android) | Android phone: plays, also with the screen off. Android TV app 0.19.x on a Google TV Streamer: fails as predicted, it skips through every station (its resolver keeps only `FILE && !isRemote` sources). |
 | S3 | | | | |
 | S4 | | | | |
-| S5 | | | | |
+| S5 | 2026-10-13 | plugin 0.0.2, Nest Hub Max | Pass with a catch | From Edge it played, but only after minutes; from the Android app it never started. Cause: switching to Cast while a station plays locally passes the local position (jellyfin-web remotecontrolautoplay.js) and the receiver seeks to it in the live stream (jellyfin-chromecast playbackManager.ts). Workaround: connect first, then start the station. Upstream fix belongs in jellyfin-chromecast. |
 | S6 | | | | |
-| S7 | | | | |
+| S7 | 2026-10-13 | | In progress | Test M3U (41 channels from 901) and an XMLTV guide with all-day programmes handed to Hans. Android TV shows Live TV on the home screen only while a programme is airing; without a guide only as a tile in My media. |
 | S8 | | | | |
 | S9 | | | | |
 | S10 | | | | |

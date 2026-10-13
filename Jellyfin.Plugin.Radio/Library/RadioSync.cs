@@ -117,22 +117,39 @@ public sealed class RadioSync : BackgroundService
     }
 
     /// <summary>
-    /// Copies the built-in stations into the settings on first start, so the plugin page
-    /// shows what the channel publishes.
+    /// Brings the built-in stations into the settings. On first start it copies the whole
+    /// built-in list, so the plugin page shows what the channel publishes. After an update
+    /// it adds the built-in stations that are new since the list was last merged (see
+    /// <see cref="DefaultStations.MergeNewInto"/>).
     /// </summary>
-    /// <returns>True when the defaults were loaded now.</returns>
-    public static bool SeedDefaultsIfNeeded()
+    /// <param name="config">The settings, changed in place.</param>
+    /// <returns>What changed, for the log; null when nothing did.</returns>
+    public static string? ApplyBuiltInStations(PluginConfiguration config)
     {
-        var plugin = Plugin.Instance;
-        if (plugin is null || plugin.Configuration.DefaultsLoaded)
+        ArgumentNullException.ThrowIfNull(config);
+        var latest = DefaultStations.LatestVersion;
+        if (!config.DefaultsLoaded)
         {
-            return false;
+            config.Stations = DefaultStations.Load();
+            config.DefaultsLoaded = true;
+            config.DefaultsVersion = latest;
+            return "loaded the built-in Dutch station list";
         }
 
-        plugin.Configuration.Stations = DefaultStations.Load();
-        plugin.Configuration.DefaultsLoaded = true;
-        plugin.SaveConfiguration();
-        return true;
+        var merged = Version.TryParse(string.IsNullOrWhiteSpace(config.DefaultsVersion) ? DefaultStations.FirstVersion : config.DefaultsVersion, out var parsed)
+            ? parsed
+            : new Version(0, 0, 1);
+        if (merged >= Version.Parse(latest))
+        {
+            return null;
+        }
+
+        config.Stations ??= new List<StationConfig>();
+        var added = DefaultStations.MergeNewInto(config.Stations, config.DefaultsVersion);
+        config.DefaultsVersion = latest;
+        return added > 0
+            ? "added " + added.ToString(CultureInfo.InvariantCulture) + " new built-in stations"
+            : "built-in station list is up to date";
     }
 
     /// <summary>Runs one pass now.</summary>
@@ -166,9 +183,12 @@ public sealed class RadioSync : BackgroundService
             ListenForSettingsChanges();
             try
             {
-                if (SeedDefaultsIfNeeded())
+                var plugin = Plugin.Instance;
+                var change = plugin is null ? null : ApplyBuiltInStations(plugin.Configuration);
+                if (change is not null)
                 {
-                    _logger.LogInformation("Radio: loaded the built-in Dutch station list.");
+                    plugin!.SaveConfiguration();
+                    _logger.LogInformation("Radio: {Change}.", change);
                 }
             }
             catch (Exception ex)

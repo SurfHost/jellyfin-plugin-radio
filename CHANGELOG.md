@@ -3,6 +3,13 @@
 All notable changes to this plugin are listed here. Versions follow MAJOR.MINOR.PATCH;
 the GitHub release for a version carries the section below as its notes.
 
+## [0.0.3] - 2026-10-13
+
+- New built-in stations now arrive by themselves: after an update, the plugin adds the built-in stations that are new in that version, right after their main station, the next time Jellyfin starts. Stations you removed are not brought back. Updating from 0.0.1 or 0.0.2 adds the 10 non-stop channels (8 of them switched on), unless you already added them with "Add missing Dutch stations".
+- Casting: connect to the Cast device first, then start the station. If you switch to Cast while a station is already playing, the Cast device waits as long as you had been listening (a Jellyfin web and Cast receiver issue, explained in SETUP.md).
+- Android TV: the Android TV app only plays local audio files, so it skips through the Radio channel. SETUP.md explains this; a Live TV route for Android TV is being tested.
+- Test results so far are in docs/SPIKES.md.
+
 ## [0.0.2] - 2026-10-13
 
 - 10 non-stop channels added to the built-in list, each right after its main station: 538 Non-Stop, Qmusic Non-Stop, Sky Radio Hits, Sky Radio Non-Stop@Work, Radio 10 Non-Stop, 100% NL Non-Stop, SLAM! Non-Stop and JOE Non-Stop are switched on; Radio 10 Soul & Jazz and BNR Business Beats are in the list but switched off. Every stream was checked and its format measured on 2026-10-13 (all MP3, 128 kbps).
