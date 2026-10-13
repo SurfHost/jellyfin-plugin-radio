@@ -29,8 +29,9 @@ refuses it. This plugin makes stations real audio items instead.
 
 ## Features
 
-- **44 Dutch stations built in**, 33 switched on: NPO (Radio 1, 2, 3FM, Klassiek, 5, Blend, Sterren NL, FunX), national commercial stations
-  (538, Qmusic, Sky Radio, Radio 10, Veronica, 100% NL, SLAM!, Sublime, KINK, Arrow, JOE, Decibel, BNR) and 12 regional public broadcasters.
+- **54 Dutch stations built in**, 41 switched on: NPO (Radio 1, 2, 3FM, Klassiek, 5, Blend, Sterren NL, FunX), national commercial stations
+  (538, Qmusic, Sky Radio, Radio 10, Veronica, 100% NL, SLAM!, Sublime, KINK, Arrow, JOE, Decibel, BNR), their non-stop channels
+  (538, Qmusic, Sky Radio Hits and Non-Stop@Work, Radio 10, 100% NL, SLAM!, JOE) and 12 regional public broadcasters.
   Every stream was checked and its format measured on 2026-10-13.
 - **Your own stations.** Paste a stream URL, press **Test and add**: the plugin checks that it is a live MP3 stream and measures its format.
   StreamTheWorld node URLs are replaced by the stable redirect URL; playlists (.m3u, .pls) and AAC streams are refused with an explanation.

@@ -3,6 +3,12 @@
 All notable changes to this plugin are listed here. Versions follow MAJOR.MINOR.PATCH;
 the GitHub release for a version carries the section below as its notes.
 
+## [0.0.2] - 2026-10-13
+
+- 10 non-stop channels added to the built-in list, each right after its main station: 538 Non-Stop, Qmusic Non-Stop, Sky Radio Hits, Sky Radio Non-Stop@Work, Radio 10 Non-Stop, 100% NL Non-Stop, SLAM! Non-Stop and JOE Non-Stop are switched on; Radio 10 Soul & Jazz and BNR Business Beats are in the list but switched off. Every stream was checked and its format measured on 2026-10-13 (all MP3, 128 kbps).
+- Already installed? Open the plugin page, press "Add missing Dutch stations" and then Save. The new channels are placed right after their main station.
+- Radio Veronica and Sublime have no non-stop channel, so none was added for them.
+
 ## [0.0.1] - 2026-10-13
 
 Test build, published as a GitHub pre-release and installable from this repository's manifest, to run the checks in

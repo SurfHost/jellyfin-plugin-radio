@@ -192,7 +192,7 @@ jobs:
           TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           # The changelog Jellyfin shows in its catalog: this version's CHANGELOG.md
           # section as one paragraph, or what the manifest already had.
-          CL=$(awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {found=1; next} found && /^## \[/ {exit} found && NF {sub(/^[-*] /, ""); printf "%s ", $0}' CHANGELOG.md | sed 's/ *$//')
+          CL=$(awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {found=1; next} found && /^## \[/ {exit} found && NF {sub(/^[ \t]*[-*] /, ""); sub(/^[ \t]+/, ""); printf "%s ", $0}' CHANGELOG.md | sed 's/ *$//')
           if [ -z "$CL" ]; then
             CL="$(jq -r --arg v "$VERSION" '(.[0].versions[] | select(.version==$v) | .changelog) // "See the GitHub release notes."' manifest.json)"
           fi

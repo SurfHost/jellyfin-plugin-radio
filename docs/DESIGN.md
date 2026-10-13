@@ -292,6 +292,10 @@ Spike build v0.0.x is installed by hand and never published in the manifest. It 
 - **Built-in list: 44 stations, 33 enabled.** On 2026-10-13 every stream was fetched and its MP3 frame headers read, including Arrow and the
   12 regional broadcasters (all MP3), so those ship enabled. The FunX city/theme variants and NPO 3FM Alternative ship disabled. Omroep
   Flevoland offers only AAC and is left out. Stations with only a `.ico` favicon have no logo.
+- **0.0.2: non-stop channels (54 stations, 41 enabled).** Found through nederland.fm's station config and confirmed on the broadcasters'
+  own station records. Each was verified by its icy-name (StreamTheWorld) or redirect target mount (`Qmusic_nl_nonstop.mp3`,
+  `Joe_nl_nonstop.mp3`; DPG sends an empty icy-name) and its MP3 frame headers. They sit right after their main station (group "Non-stop");
+  "Add missing Dutch stations" inserts a new built-in station after the built-in station it follows, so existing installs get the same order.
 - **No Artists line yet.** `ChannelItemInfo.Artists = [Group]` is left out until spike S9 shows whether it adds entries to the global artist
   list. The group is shown in the overview instead ("NPO · Live · MP3 192 kbps").
 - **RadioSync locks Name and Overview** (`LockedFields`) on every station item, so a later metadata refresh cannot undo a rename.

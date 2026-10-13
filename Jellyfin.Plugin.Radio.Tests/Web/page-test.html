@@ -130,6 +130,13 @@
         r.savedOrder = saved.Stations.map(function (s) { return s.Slug; });
         r.savedQuotedName = (stationIn(saved, 'npo-radio-1') || {}).Name;
 
+        // "Add missing" puts a new built-in station right after the one it follows.
+        defaults.splice(3, 0, station('qmusic-non-stop', 'Qmusic Non-Stop', 'https://stream.qmusic.nl/nonstop/mp3'));
+        click($('#RdDefaults'));
+        await sleep(100);
+        r.addMissingOrder = rows().map(function (row) { return row.querySelector('code').textContent; });
+        r.addMissingAlert = calls.alerts[calls.alerts.length - 1] || '';
+
         // Changing a URL clears the format, and Save is refused until it is tested.
         var q = rowBySlug('qmusic');
         field(q, 'StreamUrl').value = 'https://stream.qmusic.nl/qmusic/aachigh';

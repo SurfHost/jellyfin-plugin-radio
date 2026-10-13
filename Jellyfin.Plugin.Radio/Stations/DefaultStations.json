@@ -220,11 +220,33 @@
     "enabled": true
   },
   {
+    "slug": "538-non-stop",
+    "name": "538 Non-Stop",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/TLPSTR09.mp3",
+    "logoUrl": "https://ctfimages.talparad.io/2AIuJh6rcNAFWaDbH3cKEg/2048835da3011e2b76633a94bf56c558/538_512x512.jpg",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": true
+  },
+  {
     "slug": "qmusic",
     "name": "Qmusic",
     "group": "Landelijk",
     "streamUrl": "https://stream.qmusic.nl/qmusic/mp3",
     "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Qmusic_logo.svg/330px-Qmusic_logo.svg.png",
+    "bitrateKbps": 128,
+    "sampleRate": 48000,
+    "channels": 2,
+    "enabled": true
+  },
+  {
+    "slug": "qmusic-non-stop",
+    "name": "Qmusic Non-Stop",
+    "group": "Non-stop",
+    "streamUrl": "https://stream.qmusic.nl/nonstop/mp3",
+    "logoUrl": "https://cdn-radio.dpgmedia.net/3/76/93/cf/23/2Site-logo-_220x220_.png",
     "bitrateKbps": 128,
     "sampleRate": 48000,
     "channels": 2,
@@ -242,6 +264,28 @@
     "enabled": true
   },
   {
+    "slug": "sky-radio-hits",
+    "name": "Sky Radio Hits",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/SRGSTR01.mp3",
+    "logoUrl": "https://ctfimages.talparad.io/THnBtZH5I5RABCOp9WPpI/0d5fa4e65d6fd1e3e9d349088fecaed3/Sky_radio_-_512x512.jpg",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": true
+  },
+  {
+    "slug": "sky-radio-non-stop-at-work",
+    "name": "Sky Radio Non-Stop@Work",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/SRGSTR24.mp3",
+    "logoUrl": "https://ctfimages.talparad.io/THnBtZH5I5RABCOp9WPpI/0d5fa4e65d6fd1e3e9d349088fecaed3/Sky_radio_-_512x512.jpg",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": true
+  },
+  {
     "slug": "radio-10",
     "name": "Radio 10",
     "group": "Landelijk",
@@ -251,6 +295,28 @@
     "sampleRate": 44100,
     "channels": 2,
     "enabled": true
+  },
+  {
+    "slug": "radio-10-non-stop",
+    "name": "Radio 10 Non-Stop",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/TLPSTR15.mp3",
+    "logoUrl": "https://ctfimages.talparad.io/5HYnzuxMXkQP8qIvsHNkWh/9e86427b693d53d3bd29fca61a2fae39/Non-stop_512x512.jpg",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": true
+  },
+  {
+    "slug": "radio-10-soul-jazz",
+    "name": "Radio 10 Soul & Jazz",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/TLPSTR04.mp3",
+    "logoUrl": "https://ctfimages.talparad.io/3jTv7g44WFmA9ijbQsHTGy/bd7a071cb51e0cd202c45c231a5450b8/R10-Tile-Item-zonder-tekst-1080x1080.png?w=512&h=512&fm=jpg",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": false
   },
   {
     "slug": "radio-veronica",
@@ -275,11 +341,33 @@
     "enabled": true
   },
   {
+    "slug": "100-nl-non-stop",
+    "name": "100% NL Non-Stop",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/WEB02_MP3.mp3",
+    "logoUrl": "https://api.mediahuisradio.nl/media/b5cdek4d/100p-nl-1200x1200_non-stop.jpg?width=600",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": true
+  },
+  {
     "slug": "slam",
     "name": "SLAM!",
     "group": "Landelijk",
     "streamUrl": "https://stream.slam.nl/slam_mp3",
     "logoUrl": "",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": true
+  },
+  {
+    "slug": "slam-non-stop",
+    "name": "SLAM! Non-Stop",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/WEB10_MP3.mp3",
+    "logoUrl": "https://api.mediahuisradio.nl/media/f52ogrkf/slam-non-stop_2000x2000.jpg?width=600",
     "bitrateKbps": 128,
     "sampleRate": 44100,
     "channels": 2,
@@ -330,6 +418,17 @@
     "enabled": true
   },
   {
+    "slug": "joe-non-stop",
+    "name": "JOE Non-Stop",
+    "group": "Non-stop",
+    "streamUrl": "https://stream.joe.nl/nonstop/mp3",
+    "logoUrl": "https://cdn-radio.dpgmedia.net/2/b4/49/28/115/JOE_NON-STOP_WEB_DAB_Channel-Selector-home-logo.png",
+    "bitrateKbps": 128,
+    "sampleRate": 48000,
+    "channels": 2,
+    "enabled": true
+  },
+  {
     "slug": "radio-decibel",
     "name": "Radio Decibel",
     "group": "Landelijk",
@@ -350,6 +449,17 @@
     "sampleRate": 44100,
     "channels": 2,
     "enabled": true
+  },
+  {
+    "slug": "bnr-business-beats",
+    "name": "BNR Business Beats",
+    "group": "Non-stop",
+    "streamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/BNR_BUSINESS_BEATS.mp3",
+    "logoUrl": "https://mini-player.bnr.nl/_next/static/media/logo-bnr-business-beats.93d9de50.png",
+    "bitrateKbps": 128,
+    "sampleRate": 44100,
+    "channels": 2,
+    "enabled": false
   },
   {
     "slug": "nh-radio",

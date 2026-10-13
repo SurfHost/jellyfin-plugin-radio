@@ -358,12 +358,31 @@
                 readAll();
                 ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl('Radio/Admin/Defaults'), dataType: 'json' }).then(function (defaults) {
                     var added = 0;
-                    (defaults || []).forEach(function (d) {
-                        if (!stations.some(function (st) { return st.Slug === d.Slug; })) {
-                            stations.push(d);
-                            errors.push([]);
-                            added++;
+                    function indexOfSlug(slug) {
+                        for (var i = 0; i < stations.length; i++) {
+                            if (stations[i].Slug === slug) {
+                                return i;
+                            }
                         }
+                        return -1;
+                    }
+                    (defaults || []).forEach(function (d, di) {
+                        if (indexOfSlug(d.Slug) >= 0) {
+                            return;
+                        }
+                        // Place it after the built-in station it follows (a non-stop channel
+                        // after its main station), or at the end.
+                        var at = stations.length;
+                        for (var k = di - 1; k >= 0; k--) {
+                            var prev = indexOfSlug(defaults[k].Slug);
+                            if (prev >= 0) {
+                                at = prev + 1;
+                                break;
+                            }
+                        }
+                        stations.splice(at, 0, d);
+                        errors.splice(at, 0, []);
+                        added++;
                     });
                     render();
                     Dashboard.alert(added ? 'Added ' + added + ' stations. Press Save to publish them.' : 'All built-in stations are already in the list.');

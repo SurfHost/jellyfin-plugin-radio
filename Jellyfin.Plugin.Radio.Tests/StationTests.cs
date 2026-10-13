@@ -15,8 +15,8 @@ public class StationTests
     {
         var stations = DefaultStations.Load();
 
-        Assert.Equal(44, stations.Count);
-        Assert.Equal(33, stations.Count(s => s.Enabled));
+        Assert.Equal(54, stations.Count);
+        Assert.Equal(41, stations.Count(s => s.Enabled));
         Assert.Equal(stations.Count, stations.Select(s => s.Slug).Distinct(StringComparer.Ordinal).Count());
         Assert.All(StationValidator.ValidateAll(stations), errors => Assert.Empty(errors));
         Assert.All(stations, s =>
@@ -31,6 +31,21 @@ public class StationTests
         // Stopped on 2026-09-01; its mounts answer 404.
         Assert.DoesNotContain(stations, s => s.StreamUrl.Contains("radio6", StringComparison.Ordinal));
         Assert.Equal("npo-radio-1", stations[0].Slug);
+    }
+
+    [Theory]
+    [InlineData("538-non-stop", "radio-538")]
+    [InlineData("qmusic-non-stop", "qmusic")]
+    [InlineData("sky-radio-hits", "sky-radio")]
+    [InlineData("radio-10-non-stop", "radio-10")]
+    [InlineData("100-nl-non-stop", "100-nl")]
+    [InlineData("slam-non-stop", "slam")]
+    [InlineData("joe-non-stop", "joe")]
+    [InlineData("bnr-business-beats", "bnr-nieuwsradio")]
+    public void NonStopChannelsFollowTheirMainStation(string channel, string main)
+    {
+        var slugs = DefaultStations.Load().Select(s => s.Slug).ToList();
+        Assert.Equal(slugs.IndexOf(main) + 1, slugs.IndexOf(channel));
     }
 
     [Fact]
@@ -101,8 +116,8 @@ public class StationTests
     public void UsesTheBuiltInListUntilTheDefaultsAreLoaded()
     {
         var config = new PluginConfiguration();
-        Assert.Equal(44, StationCatalog.Configured(config).Count);
-        Assert.Equal(33, StationCatalog.Playable(config).Count);
+        Assert.Equal(54, StationCatalog.Configured(config).Count);
+        Assert.Equal(41, StationCatalog.Playable(config).Count);
 
         config.DefaultsLoaded = true;
         Assert.Empty(StationCatalog.Configured(config));

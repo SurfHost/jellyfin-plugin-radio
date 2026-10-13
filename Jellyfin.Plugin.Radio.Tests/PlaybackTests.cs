@@ -133,8 +133,8 @@ public class PlaybackTests
 
             var result = await channel.GetChannelItems(new InternalChannelItemQuery(), CancellationToken.None);
 
-            Assert.Equal(33, result.Items.Count);
-            Assert.Equal(33, result.TotalRecordCount);
+            Assert.Equal(41, result.Items.Count);
+            Assert.Equal(41, result.TotalRecordCount);
             Assert.Equal("npo-radio-1", result.Items[0].Id);
             Assert.All(result.Items, i => Assert.Equal(DateTimeKind.Utc, i.DateModified.Kind));
             Assert.True(File.Exists(Path.Combine(directory, "state.json")));
