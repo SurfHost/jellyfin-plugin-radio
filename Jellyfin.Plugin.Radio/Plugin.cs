@@ -1,0 +1,83 @@
+using System;
+using System.Collections.Generic;
+using Jellyfin.Plugin.Radio.Configuration;
+using MediaBrowser.Common.Configuration;
+using MediaBrowser.Common.Plugins;
+using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Serialization;
+
+namespace Jellyfin.Plugin.Radio;
+
+/// <summary>
+/// Radio plugin. Publishes Dutch radio stations as a Jellyfin channel whose items are
+/// live audio, so they play in every Jellyfin app that shows channels.
+/// </summary>
+public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+{
+    /// <summary>The plugin id, shared with meta.json and manifest.json.</summary>
+    public const string PluginId = "b44dc395-cb0c-4e22-9ba3-5d10a39484ed";
+
+    /// <summary>Initializes a new instance of the <see cref="Plugin"/> class.</summary>
+    /// <param name="applicationPaths">Jellyfin's paths.</param>
+    /// <param name="xmlSerializer">The XML serializer.</param>
+    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
+        : base(applicationPaths, xmlSerializer)
+    {
+        Instance = this;
+    }
+
+    /// <summary>Gets the current plugin instance.</summary>
+    public static Plugin? Instance { get; private set; }
+
+    /// <summary>
+    /// Gets the current configuration, or defaults while the plugin is not loaded
+    /// (unit tests).
+    /// </summary>
+    public static PluginConfiguration Config => Instance?.Configuration ?? new PluginConfiguration();
+
+    /// <inheritdoc />
+    public override string Name => "Radio";
+
+    /// <inheritdoc />
+    public override string Description => "Listen to Dutch radio stations in every Jellyfin app.";
+
+    /// <inheritdoc />
+    public override Guid Id => Guid.Parse(PluginId);
+
+    /// <summary>
+    /// Reports the version the way meta.json and the plugin catalog write it
+    /// (MAJOR.MINOR.PATCH). Jellyfin takes the version it lists for a running plugin
+    /// from the assembly, which always has four parts (0.1.0.0), but it looks the
+    /// plugin's image up by version against meta.json's 0.1.0. Those two never match,
+    /// so the logo would vanish from the plugin pages after every restart.
+    /// </summary>
+    /// <returns>The plugin info with a three-part version.</returns>
+    public override PluginInfo GetPluginInfo()
+    {
+        var info = base.GetPluginInfo();
+        info.Version = ManifestVersion(info.Version);
+        return info;
+    }
+
+    /// <summary>Drops a zero fourth part from a version: 0.1.0.0 becomes 0.1.0.</summary>
+    /// <param name="version">The assembly version.</param>
+    /// <returns>The version as meta.json writes it.</returns>
+    public static Version ManifestVersion(Version version)
+    {
+        ArgumentNullException.ThrowIfNull(version);
+        return version.Revision == 0 ? new Version(version.Major, version.Minor, version.Build) : version;
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<PluginPageInfo> GetPages() => new[]
+    {
+        new PluginPageInfo
+        {
+            Name = "Radio",
+            DisplayName = "Radio",
+            EmbeddedResourcePath = GetType().Namespace + ".Web.configPage.html",
+            EnableInMainMenu = true,
+            MenuIcon = "radio"
+        }
+    };
+}

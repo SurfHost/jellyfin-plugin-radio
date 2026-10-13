@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Radio</title>
+</head>
+<body>
+<div id="RadioConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-checkbox">
+    <style>
+        #RadioConfigPage .rd-section { margin-bottom: 2em; }
+        #RadioConfigPage .rd-buttons { display: flex; gap: .75em; flex-wrap: wrap; margin: 1em 0; }
+        #RadioConfigPage .rd-station { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5em 1em; padding: .75em; margin: .5em 0;
+            border: 1px solid rgba(127,127,127,.3); border-radius: 6px; }
+        #RadioConfigPage .rd-station.rd-off { opacity: .55; }
+        #RadioConfigPage .rd-station.rd-invalid { border-color: #ff8a80; }
+        #RadioConfigPage .rd-logo { width: 48px; height: 48px; object-fit: contain; border-radius: 4px; background: rgba(127,127,127,.15); flex: none; }
+        #RadioConfigPage .rd-fields { flex: 1 1 420px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0 1em; }
+        #RadioConfigPage .rd-fields .inputContainer { margin-bottom: .6em; }
+        #RadioConfigPage .rd-wide { grid-column: 1 / -1; }
+        #RadioConfigPage .rd-side { display: flex; flex-direction: column; gap: .4em; min-width: 9em; }
+        #RadioConfigPage .rd-side button { margin: 0; }
+        #RadioConfigPage .rd-meta { font-size: .85em; opacity: .8; }
+        #RadioConfigPage .rd-errors { color: #ff8a80; font-size: .9em; grid-column: 1 / -1; }
+        #RadioConfigPage .rd-warn { color: #ffcc80; font-size: .9em; }
+        #RadioConfigPage .rd-ok { color: #4caf50; }
+        #RadioConfigPage .rd-bad { color: #ff8a80; }
+        #RadioConfigPage .rd-test div { margin: .25em 0; }
+        #RadioConfigPage .rd-users label { display: block; margin: .35em 0; }
+        #RadioConfigPage code { background: rgba(127,127,127,.2); padding: 0 .3em; border-radius: 3px; }
+    </style>
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="RadioConfigForm">
+                <div class="rd-section">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">Radio</h2>
+                    </div>
+                    <p class="fieldDescription">
+                        Every enabled station below is a live audio item in the <b>Radio</b> channel (Home, My Media), in this order.
+                        It plays in Jellyfin's music player on the web; Jellyfin Desktop and the Android and iOS apps are being verified (docs/SPIKES.md).
+                        Users need access to the channel: Dashboard &gt; Users &gt; Access &gt; Channels.
+                    </p>
+                    <div class="rd-buttons">
+                        <button is="emby-button" type="button" id="RdTest" class="raised button-alt"><span>Test</span></button>
+                        <button is="emby-button" type="button" id="RdSync" class="raised button-alt"><span>Sync now</span></button>
+                        <button is="emby-button" type="button" id="RdDefaults" class="raised button-alt"><span>Add missing Dutch stations</span></button>
+                    </div>
+                    <div id="RdTestResult" class="rd-test fieldDescription"></div>
+                </div>
+
+                <div class="rd-section">
+                    <h3 class="sectionTitle">Stations</h3>
+                    <p class="fieldDescription">
+                        Only MP3 streams. Paste the stream itself, not a playlist (.m3u, .pls); press <b>Test</b> to check it and measure its format.
+                        Removing <i>or disabling</i> a station deletes its item when you save: playlist entries for it are lost for good.
+                        Favourites come back if the same station (same id) returns within 90 days.
+                    </p>
+                    <div id="RdStations"></div>
+                </div>
+
+                <div class="rd-section">
+                    <h3 class="sectionTitle">Add a station</h3>
+                    <div class="rd-fields">
+                        <div class="inputContainer">
+                            <input is="emby-input" type="text" id="RdNewName" label="Name" />
+                        </div>
+                        <div class="inputContainer">
+                            <input is="emby-input" type="text" id="RdNewGroup" label="Group" placeholder="Landelijk" />
+                        </div>
+                        <div class="inputContainer rd-wide">
+                            <input is="emby-input" type="url" id="RdNewUrl" label="Stream URL" placeholder="https://icecast.omroep.nl/radio2-bb-mp3" />
+                        </div>
+                        <div class="inputContainer rd-wide">
+                            <input is="emby-input" type="url" id="RdNewLogo" label="Logo URL (optional)" />
+                        </div>
+                    </div>
+                    <button is="emby-button" type="button" id="RdAdd" class="raised button-alt"><span>Test and add</span></button>
+                    <div id="RdAddResult" class="fieldDescription"></div>
+                </div>
+
+                <div class="rd-section">
+                    <h3 class="sectionTitle">Options</h3>
+                    <label class="checkboxContainer">
+                        <input is="emby-checkbox" type="checkbox" id="RdRelay" />
+                        <span>Don't redirect apps to the station (Android Auto)</span>
+                    </label>
+                    <div class="fieldDescription">
+                        Android Auto asks Jellyfin for a redirect to the station and then fetches it itself. Tick this when that fails,
+                        for example with a server reached over http: the server then streams it instead. The web, Android and iOS apps
+                        always go through the server; Jellyfin Desktop and Chromecast always fetch the station directly.
+                    </div>
+                    <h3 class="sectionTitle">Hide the channel from</h3>
+                    <div class="fieldDescription">
+                        For example a living-room Android TV account: that app cannot play channel audio. This only hides the channel;
+                        do not tick an administrator you also use in the dashboard (Radio would then be missing from every user's Access tab).
+                    </div>
+                    <div id="RdUsers" class="rd-users"></div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block"><span>Save</span></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = 'b44dc395-cb0c-4e22-9ba3-5d10a39484ed';
+            var page = document.querySelector('#RadioConfigPage');
+            var stations = [];
+            var errors = [];
+            var savedSlugs = {};
+            var deleteWarning = 'Its item is deleted when you save: playlist entries for it are lost for good. '
+                + 'Favourites come back if the same station returns within 90 days.';
+
+            // Safe in text and in double- or single-quoted attributes.
+            function esc(text) {
+                return String(text == null ? '' : text)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            }
+
+            function norm(id) {
+                return String(id || '').replace(/-/g, '').toLowerCase();
+            }
+
+            function post(path, body) {
+                return ApiClient.ajax({
+                    type: 'POST',
+                    url: ApiClient.getUrl(path),
+                    data: JSON.stringify(body),
+                    contentType: 'application/json',
+                    dataType: 'json'
+                });
+            }
+
+            function failed(what) {
+                return function (e) {
+                    Dashboard.alert(what + ' failed' + (e && e.status ? ' (HTTP ' + e.status + ')' : '') + '. Check the server log.');
+                };
+            }
+
+            function slugify(name) {
+                var s = String(name || '').toLowerCase();
+                if (s.normalize) {
+                    s = s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+                }
+                s = s.replace(/%/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 60);
+                if (!s) {
+                    s = 'station';
+                }
+                var slug = s;
+                var n = 2;
+                while (stations.some(function (st) { return st.Slug === slug; })) {
+                    slug = s + '-' + n;
+                    n++;
+                }
+                return slug;
+            }
+
+            function format(st) {
+                if (!st.BitrateKbps || !st.SampleRate) {
+                    return 'format not measured: press Test';
+                }
+                return 'MP3 ' + st.BitrateKbps + ' kbps, ' + (st.SampleRate / 1000) + ' kHz, ' + (st.Channels === 1 ? 'mono' : 'stereo');
+            }
+
+            function render() {
+                var html = '';
+                stations.forEach(function (st, i) {
+                    var err = errors[i] || [];
+                    html += '<div class="rd-station' + (st.Enabled ? '' : ' rd-off') + (err.length ? ' rd-invalid' : '') + '" data-index="' + i + '">'
+                        + (st.LogoUrl ? '<img class="rd-logo" alt="" src="' + esc(st.LogoUrl) + '" />' : '<div class="rd-logo"></div>')
+                        + '<div class="rd-fields">'
+                        + '<div class="inputContainer"><input is="emby-input" type="text" data-field="Name" label="Name" value="' + esc(st.Name) + '" /></div>'
+                        + '<div class="inputContainer"><input is="emby-input" type="text" data-field="Group" label="Group" value="' + esc(st.Group) + '" /></div>'
+                        + '<div class="inputContainer rd-wide"><input is="emby-input" type="url" data-field="StreamUrl" label="Stream URL" value="' + esc(st.StreamUrl) + '" /></div>'
+                        + '<div class="inputContainer rd-wide"><input is="emby-input" type="url" data-field="LogoUrl" label="Logo URL" value="' + esc(st.LogoUrl) + '" /></div>'
+                        + '<div class="rd-meta rd-wide">id <code>' + esc(st.Slug) + '</code> &middot; <span class="rd-format">' + esc(format(st)) + '</span><span class="rd-probe"></span></div>'
+                        + (err.length ? '<div class="rd-errors">' + err.map(esc).join('<br/>') + '</div>' : '')
+                        + '</div>'
+                        + '<div class="rd-side">'
+                        + '<label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" data-field="Enabled"' + (st.Enabled ? ' checked' : '') + ' /><span>Enabled</span></label>'
+                        + '<button is="emby-button" type="button" class="raised button-alt" data-action="probe"><span>Test</span></button>'
+                        + '<button is="emby-button" type="button" class="raised button-alt" data-action="up"' + (i === 0 ? ' disabled' : '') + '><span>Move up</span></button>'
+                        + '<button is="emby-button" type="button" class="raised button-alt" data-action="down"' + (i === stations.length - 1 ? ' disabled' : '') + '><span>Move down</span></button>'
+                        + '<button is="emby-button" type="button" class="raised button-alt" data-action="remove"><span>Remove</span></button>'
+                        + '</div></div>';
+                });
+                page.querySelector('#RdStations').innerHTML = html || '<p class="fieldDescription">No stations. Use "Add missing Dutch stations" or add one below.</p>';
+            }
+
+            function rowOf(st) {
+                return page.querySelector('.rd-station[data-index="' + stations.indexOf(st) + '"]');
+            }
+
+            function readRow(row) {
+                var st = stations[parseInt(row.getAttribute('data-index'), 10)];
+                Array.prototype.forEach.call(row.querySelectorAll('[data-field]'), function (input) {
+                    var field = input.getAttribute('data-field');
+                    if (field === 'Enabled') {
+                        st.Enabled = input.checked;
+                        return;
+                    }
+                    var value = input.value.trim();
+                    if (field === 'StreamUrl' && value !== (st.StreamUrl || '')) {
+                        // A new URL is a new stream: its format must be measured again.
+                        st.BitrateKbps = 0;
+                        st.SampleRate = 0;
+                        st.Channels = 0;
+                        var label = row.querySelector('.rd-format');
+                        if (label) {
+                            label.textContent = format(st);
+                        }
+                    }
+                    st[field] = value;
+                });
+                return st;
+            }
+
+            function readAll() {
+                Array.prototype.forEach.call(page.querySelectorAll('.rd-station'), readRow);
+            }
+
+            function applyProbe(st, r) {
+                st.StreamUrl = r.StreamUrl || st.StreamUrl;
+                st.BitrateKbps = r.BitrateKbps;
+                st.SampleRate = r.SampleRate;
+                st.Channels = r.Channels;
+            }
+
+            function probeMessage(r) {
+                var text = r.Ok ? '<span class="rd-ok">&#10004; ' + esc('MP3 ' + r.BitrateKbps + ' kbps' + (r.IcyName ? ', "' + r.IcyName + '"' : '')) + '</span>'
+                    : '<span class="rd-bad">&#10008; ' + esc(r.Error) + '</span>';
+                (r.Warnings || []).forEach(function (w) { text += '<br/><span class="rd-warn">' + esc(w) + '</span>'; });
+                return text;
+            }
+
+            function probeStation(st, button) {
+                var probedUrl = st.StreamUrl;
+                button.disabled = true;
+                rowOf(st).querySelector('.rd-probe').innerHTML = ' &middot; testing&hellip;';
+                post('Radio/Admin/Probe', { Url: probedUrl }).then(function (r) {
+                    // The list may have been reordered or edited meanwhile: find the station again.
+                    readAll();
+                    var i = stations.indexOf(st);
+                    if (i < 0) {
+                        return;
+                    }
+                    if (st.StreamUrl !== probedUrl) {
+                        rowOf(st).querySelector('.rd-probe').innerHTML = '<br/><span class="rd-warn">The URL changed during the test; press Test again.</span>';
+                        return;
+                    }
+                    if (r.Ok) {
+                        applyProbe(st, r);
+                        errors[i] = [];
+                    }
+                    render();
+                    rowOf(st).querySelector('.rd-probe').innerHTML = '<br/>' + probeMessage(r);
+                }, function () {
+                    var row = rowOf(st);
+                    if (row) {
+                        row.querySelector('.rd-probe').innerHTML = '<br/><span class="rd-bad">The test request failed.</span>';
+                    }
+                }).finally(function () {
+                    button.disabled = false;
+                });
+            }
+
+            function onStationClick(event) {
+                var button = event.target.closest('button[data-action]');
+                if (!button) {
+                    return;
+                }
+                readAll();
+                var index = parseInt(button.closest('.rd-station').getAttribute('data-index'), 10);
+                var st = stations[index];
+                var action = button.getAttribute('data-action');
+                if (action === 'up' || action === 'down') {
+                    var other = action === 'up' ? index - 1 : index + 1;
+                    stations[index] = stations[other];
+                    stations[other] = st;
+                    var err = errors[index];
+                    errors[index] = errors[other];
+                    errors[other] = err;
+                    render();
+                } else if (action === 'remove') {
+                    if (window.confirm('Remove "' + st.Name + '"?' + (savedSlugs[st.Slug] ? ' ' + deleteWarning : ''))) {
+                        stations.splice(index, 1);
+                        errors.splice(index, 1);
+                        render();
+                    }
+                } else if (action === 'probe') {
+                    probeStation(st, button);
+                }
+            }
+
+            function onStationChange(event) {
+                var row = event.target.closest('.rd-station');
+                if (!row) {
+                    return;
+                }
+                if (event.target.getAttribute('data-field') === 'Enabled' && !event.target.checked) {
+                    var st = stations[parseInt(row.getAttribute('data-index'), 10)];
+                    if (savedSlugs[st.Slug] && !window.confirm('Disable "' + st.Name + '"? ' + deleteWarning)) {
+                        event.target.checked = true;
+                    }
+                }
+                readRow(row);
+                row.classList.toggle('rd-off', !stations[parseInt(row.getAttribute('data-index'), 10)].Enabled);
+            }
+
+            function addStation() {
+                readAll();
+                var button = page.querySelector('#RdAdd');
+                var name = page.querySelector('#RdNewName').value.trim();
+                var url = page.querySelector('#RdNewUrl').value.trim();
+                var target = page.querySelector('#RdAddResult');
+                if (!name || !url) {
+                    target.innerHTML = '<span class="rd-bad">Enter a name and a stream URL.</span>';
+                    return;
+                }
+                if (button.disabled) {
+                    return;
+                }
+                button.disabled = true;
+                target.textContent = 'Testing…';
+                post('Radio/Admin/Probe', { Url: url }).then(function (r) {
+                    target.innerHTML = probeMessage(r);
+                    if (!r.Ok) {
+                        return;
+                    }
+                    readAll();
+                    var st = {
+                        Slug: slugify(name),
+                        Name: name,
+                        Group: page.querySelector('#RdNewGroup').value.trim(),
+                        StreamUrl: url,
+                        LogoUrl: page.querySelector('#RdNewLogo').value.trim(),
+                        Enabled: true
+                    };
+                    applyProbe(st, r);
+                    stations.push(st);
+                    errors.push([]);
+                    render();
+                    ['#RdNewName', '#RdNewUrl', '#RdNewLogo'].forEach(function (id) { page.querySelector(id).value = ''; });
+                    target.innerHTML += '<br/>Added "' + esc(name) + '". Press Save to publish it.';
+                }, function () {
+                    target.innerHTML = '<span class="rd-bad">The test request failed.</span>';
+                }).finally(function () {
+                    button.disabled = false;
+                });
+            }
+
+            function addDefaults() {
+                readAll();
+                ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl('Radio/Admin/Defaults'), dataType: 'json' }).then(function (defaults) {
+                    var added = 0;
+                    (defaults || []).forEach(function (d) {
+                        if (!stations.some(function (st) { return st.Slug === d.Slug; })) {
+                            stations.push(d);
+                            errors.push([]);
+                            added++;
+                        }
+                    });
+                    render();
+                    Dashboard.alert(added ? 'Added ' + added + ' stations. Press Save to publish them.' : 'All built-in stations are already in the list.');
+                }, failed('Loading the built-in stations'));
+            }
+
+            function loadUsers(cfg) {
+                return ApiClient.getUsers().then(function (users) {
+                    var excluded = (cfg.ExcludedUserIds || []).map(norm);
+                    var html = '';
+                    (users || []).forEach(function (user) {
+                        var isAdmin = !!(user.Policy && user.Policy.IsAdministrator);
+                        html += '<label><input is="emby-checkbox" type="checkbox" class="rd-user" data-user-id="' + esc(user.Id) + '"'
+                            + (isAdmin ? ' data-admin="1"' : '') + (excluded.indexOf(norm(user.Id)) >= 0 ? ' checked' : '') + ' /><span>'
+                            + esc(user.Name) + (isAdmin ? ' (administrator)' : '') + '</span></label>';
+                    });
+                    page.querySelector('#RdUsers').innerHTML = html;
+                });
+            }
+
+            function loadConfig() {
+                Dashboard.showLoadingMsg();
+                return ApiClient.getPluginConfiguration(pluginId).then(function (cfg) {
+                    page.querySelector('#RdRelay').checked = !!cfg.RelayThroughServer;
+                    var source = cfg.DefaultsLoaded
+                        ? Promise.resolve(cfg.Stations || [])
+                        : ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl('Radio/Admin/Defaults'), dataType: 'json' });
+                    return Promise.all([source, loadUsers(cfg)]).then(function (results) {
+                        stations = results[0] || [];
+                        errors = stations.map(function () { return []; });
+                        savedSlugs = {};
+                        if (cfg.DefaultsLoaded) {
+                            stations.forEach(function (st) { savedSlugs[st.Slug] = true; });
+                        }
+                        render();
+                    });
+                }).catch(failed('Loading the settings')).finally(function () {
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function save(event) {
+                event.preventDefault();
+                readAll();
+                Dashboard.showLoadingMsg();
+                post('Radio/Admin/Validate', stations).then(function (result) {
+                    errors = result || [];
+                    var bad = errors.filter(function (e) { return e && e.length; }).length;
+                    if (bad) {
+                        render();
+                        Dashboard.alert(bad + ' station(s) have problems (marked in red). Fix or remove them, then save again.');
+                        return null;
+                    }
+                    return ApiClient.getPluginConfiguration(pluginId).then(function (cfg) {
+                        cfg.Stations = stations;
+                        cfg.DefaultsLoaded = true;
+                        cfg.RelayThroughServer = page.querySelector('#RdRelay').checked;
+                        cfg.ExcludedUserIds = Array.prototype.filter.call(page.querySelectorAll('.rd-user'), function (box) {
+                            return box.checked;
+                        }).map(function (box) { return box.getAttribute('data-user-id'); });
+                        return ApiClient.updatePluginConfiguration(pluginId, cfg).then(function (r) {
+                            savedSlugs = {};
+                            stations.forEach(function (st) { savedSlugs[st.Slug] = true; });
+                            render();
+                            Dashboard.processPluginConfigurationUpdateResult(r);
+                        });
+                    });
+                }).catch(failed('Saving')).finally(function () {
+                    Dashboard.hideLoadingMsg();
+                });
+                return false;
+            }
+
+            function line(ok, label, detail) {
+                return '<div class="' + (ok ? 'rd-ok' : 'rd-bad') + '">' + (ok ? '&#10004; ' : '&#10008; ') + esc(label) + (detail ? ': ' + esc(detail) : '') + '</div>';
+            }
+
+            function showReport(r) {
+                var html = line(r.ChannelRegistered, 'Channel', r.ChannelRegistered ? 'registered (plugin ' + r.PluginVersion + ')' : 'not registered yet; press Sync now');
+                var published = (r.Stations || []).filter(function (s) { return s.Enabled && (!s.Errors || !s.Errors.length); });
+                var playable = published.filter(function (s) { return s.ItemFound && s.Sources > 0 && s.HasAudioStream && s.DirectPlay; });
+                html += line(playable.length === published.length && published.length > 0, 'Stations',
+                    playable.length + ' of ' + published.length + ' published stations ready to play' + (r.TestUser ? ' for ' + r.TestUser : ''));
+                published.forEach(function (s) {
+                    if (!s.ItemFound) {
+                        html += line(false, s.Name, 'no item yet; press Sync now');
+                    } else if (s.PlaybackError) {
+                        html += line(false, s.Name, s.PlaybackError);
+                    } else if (!(s.Sources > 0 && s.HasAudioStream && s.DirectPlay)) {
+                        html += line(false, s.Name, 'unexpected media source (' + s.Sources + ' sources, ' + s.Container + ')');
+                    }
+                });
+                (r.Stations || []).forEach(function (s) {
+                    if (s.Enabled && s.Errors && s.Errors.length) {
+                        html += line(false, s.Name || s.Slug, 'not published: ' + s.Errors.join(' '));
+                    }
+                });
+                (r.Users || []).forEach(function (u) {
+                    if (!u.IsDisabled && !u.Excluded) {
+                        (u.Problems || []).forEach(function (p) { html += line(false, u.Name, p); });
+                    }
+                });
+                if (r.LastSync) {
+                    html += '<div>Last sync: ' + esc(new Date(r.LastSync.RanUtc).toLocaleString()) + ', ' + r.LastSync.Items + ' items, '
+                        + r.LastSync.Updated + ' updated' + (r.LastSync.Error ? ' &mdash; <span class="rd-bad">' + esc(r.LastSync.Error) + '</span>' : '') + '</div>';
+                }
+                page.querySelector('#RdTestResult').innerHTML = html;
+            }
+
+            function test() {
+                var target = page.querySelector('#RdTestResult');
+                target.textContent = 'Testing… (save your changes first)';
+                ApiClient.ajax({ type: 'GET', url: ApiClient.getUrl('Radio/Admin/Test'), dataType: 'json' }).then(showReport, function () {
+                    target.innerHTML = line(false, 'Test', 'the request failed. Is the plugin loaded? Check the server log.');
+                });
+            }
+
+            function sync() {
+                var target = page.querySelector('#RdTestResult');
+                target.textContent = 'Syncing…';
+                post('Radio/Admin/Resync', {}).then(function () {
+                    test();
+                }, function () {
+                    target.innerHTML = line(false, 'Sync', 'the request failed. Check the server log.');
+                });
+            }
+
+            page.addEventListener('pageshow', function () {
+                loadConfig();
+            });
+            page.querySelector('#RadioConfigForm').addEventListener('submit', save);
+            page.querySelector('#RdStations').addEventListener('click', onStationClick);
+            page.querySelector('#RdStations').addEventListener('change', onStationChange);
+            page.querySelector('#RdAdd').addEventListener('click', addStation);
+            ['#RdNewName', '#RdNewGroup', '#RdNewUrl', '#RdNewLogo'].forEach(function (id) {
+                page.querySelector(id).addEventListener('keydown', function (event) {
+                    // Enter here adds the station; without this it would submit (save) the form.
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addStation();
+                    }
+                });
+            });
+            page.querySelector('#RdUsers').addEventListener('change', function (event) {
+                var box = event.target;
+                if (box.checked && box.getAttribute('data-admin') === '1'
+                    && !window.confirm('Hide Radio from an administrator? If you use this account in the dashboard, Radio disappears from every user\'s Access tab, and saving a user there removes their access to it.')) {
+                    box.checked = false;
+                }
+            });
+            page.querySelector('#RdDefaults').addEventListener('click', addDefaults);
+            page.querySelector('#RdTest').addEventListener('click', test);
+            page.querySelector('#RdSync').addEventListener('click', sync);
+        })();
+    </script>
+</div>
+</body>
+</html>

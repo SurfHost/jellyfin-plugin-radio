@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <!-- Source of channel.png, the Radio channel's tile in Jellyfin (Home > My Media). -->
+  <defs>
+    <radialGradient id="bg" cx="0.3" cy="0.45" r="0.9">
+      <stop offset="0" stop-color="#1d2747"/>
+      <stop offset="1" stop-color="#0a0f1e"/>
+    </radialGradient>
+    <linearGradient id="jf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#aa5cc3"/>
+      <stop offset="1" stop-color="#00a4dc"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="960" height="540" fill="url(#bg)"/>
+
+  <g transform="translate(300 270) scale(0.95)">
+    <rect x="-160" y="-160" width="320" height="320" rx="84" fill="url(#jf)"/>
+    <g fill="none" stroke="#fff" stroke-linejoin="round" stroke-linecap="round" transform="translate(0 14)">
+      <path d="M-58,-52 L44,-112" stroke-width="15"/>
+      <circle cx="48" cy="-114" r="11" fill="#fff" stroke-width="0"/>
+      <rect x="-112" y="-52" width="224" height="150" rx="26" stroke-width="18"/>
+      <circle cx="-42" cy="23" r="41" stroke-width="15"/>
+      <circle cx="-42" cy="23" r="12" fill="#fff" stroke-width="0"/>
+      <path d="M30,-6 L80,-6 M30,22 L80,22" stroke-width="13"/>
+      <circle cx="55" cy="60" r="13" fill="#fff" stroke-width="0"/>
+    </g>
+  </g>
+
+  <text x="490" y="306" font-family="Segoe UI, sans-serif" font-weight="700" font-size="128" fill="#ffffff" letter-spacing="-1">Radio</text>
+</svg>

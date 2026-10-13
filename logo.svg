@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <radialGradient id="bg" cx="0.3" cy="0.45" r="0.9">
+      <stop offset="0" stop-color="#1d2747"/>
+      <stop offset="1" stop-color="#0a0f1e"/>
+    </radialGradient>
+    <linearGradient id="jf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#aa5cc3"/>
+      <stop offset="1" stop-color="#00a4dc"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Emblem: a classic radio set with its antenna. -->
+  <g transform="translate(408 540) scale(1.6250)">
+    <rect x="-160" y="-160" width="320" height="320" rx="84" fill="url(#jf)"/>
+    <g fill="none" stroke="#fff" stroke-linejoin="round" stroke-linecap="round" transform="translate(0 14)">
+      <!-- Antenna. -->
+      <path d="M-58,-52 L44,-112" stroke-width="15"/>
+      <circle cx="48" cy="-114" r="11" fill="#fff" stroke-width="0"/>
+      <!-- Cabinet. -->
+      <rect x="-112" y="-52" width="224" height="150" rx="26" stroke-width="18"/>
+      <!-- Speaker. -->
+      <circle cx="-42" cy="23" r="41" stroke-width="15"/>
+      <circle cx="-42" cy="23" r="12" fill="#fff" stroke-width="0"/>
+      <!-- Tuning scale and knob. -->
+      <path d="M30,-6 L80,-6 M30,22 L80,22" stroke-width="13"/>
+      <circle cx="55" cy="60" r="13" fill="#fff" stroke-width="0"/>
+    </g>
+  </g>
+
+  <!-- Plugin name. -->
+  <text x="756" y="489" font-family="Segoe UI, sans-serif" font-weight="700" font-size="200" fill="#ffffff" letter-spacing="-1">Radio</text>
+  <!-- Tagline, two lines, sized to stay readable on Jellyfin's small plugin cards. -->
+  <text font-family="Segoe UI, sans-serif" font-weight="600" font-size="100" fill="#d6def5"><tspan x="760" y="615">Nederlandse radio</tspan><tspan x="760" y="731">in elke Jellyfin-app</tspan></text>
+</svg>

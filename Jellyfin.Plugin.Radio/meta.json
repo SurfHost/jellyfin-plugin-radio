@@ -1,0 +1,13 @@
+{
+  "guid": "b44dc395-cb0c-4e22-9ba3-5d10a39484ed",
+  "name": "Radio",
+  "version": "0.0.1",
+  "targetAbi": "12.2.0.0",
+  "framework": "net10.0",
+  "owner": "SurfHost",
+  "overview": "Listen to Dutch radio stations in every Jellyfin app.",
+  "description": "Adds a Radio channel with Dutch radio stations (NPO, Qmusic, 538, Sky Radio, regional broadcasters and more). Each station is a live audio item, so it plays in Jellyfin's music player on the web, the desktop app and the Android and iOS apps, and can be cast. Administrators choose the stations, their names and logos on the plugin page; a built-in list of tested Dutch stations is included.",
+  "category": "General",
+  "imagePath": "logo.png",
+  "timestamp": "2026-10-13T12:00:00.0000000Z"
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Radio config page test</title>
+</head>
+<body>
+<pre id="result">RUNNER FAILED: did not finish</pre>
+<script>
+    // Runs the real plugin page (Web/configPage.html) against a mocked Jellyfin API and
+    // records what it did. run_page_test.py reads the JSON written into #result.
+    var errors = [];
+    window.addEventListener('error', function (e) { errors.push(String(e.message)); });
+    window.addEventListener('unhandledrejection', function (e) { errors.push('unhandled: ' + String(e.reason && (e.reason.message || e.reason.status) || e.reason)); });
+
+    var calls = { probe: [], validate: 0, update: [], alerts: [], confirms: [] };
+    var confirmAnswer = true;
+    window.confirm = function (text) { calls.confirms.push(text); return confirmAnswer; };
+
+    function station(slug, name, url) {
+        return { Slug: slug, Name: name, Group: 'G', StreamUrl: url, LogoUrl: '', BitrateKbps: 192, SampleRate: 48000, Channels: 2, Enabled: true };
+    }
+
+    var config = { DefaultsLoaded: false, Stations: [], ExcludedUserIds: [], RelayThroughServer: false };
+    var defaults = [
+        station('npo-radio-1', 'NPO Radio 1', 'https://icecast.omroep.nl/radio1-bb-mp3'),
+        station('npo-radio-2', 'NPO Radio 2', 'https://slow.example/radio2'),
+        station('qmusic', 'Qmusic', 'https://stream.qmusic.nl/qmusic/mp3')
+    ];
+
+    function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function copy(o) { return JSON.parse(JSON.stringify(o)); }
+
+    window.Dashboard = {
+        showLoadingMsg: function () {},
+        hideLoadingMsg: function () {},
+        alert: function (m) { calls.alerts.push(typeof m === 'string' ? m : m.message); },
+        processPluginConfigurationUpdateResult: function () {}
+    };
+
+    window.ApiClient = {
+        getUrl: function (path) { return 'mock/' + path; },
+        getPluginConfiguration: function () { return Promise.resolve(copy(config)); },
+        updatePluginConfiguration: function (id, cfg) { calls.update.push(copy(cfg)); config = copy(cfg); return Promise.resolve({}); },
+        getUsers: function () {
+            return Promise.resolve([
+                { Id: 'aaaaaaaa-0000-0000-0000-000000000001', Name: 'Hans', Policy: { IsAdministrator: true } },
+                { Id: 'aaaaaaaa-0000-0000-0000-000000000002', Name: 'Woonkamer', Policy: { IsAdministrator: false } }
+            ]);
+        },
+        ajax: function (o) {
+            var path = o.url.replace(/^mock\//, '');
+            var body = o.data ? JSON.parse(o.data) : null;
+            if (path === 'Radio/Admin/Defaults') {
+                return Promise.resolve(copy(defaults));
+            }
+            if (path === 'Radio/Admin/Probe') {
+                calls.probe.push(body.Url);
+                var answer = { Ok: true, StreamUrl: body.Url, BitrateKbps: 128, SampleRate: 44100, Channels: 2, Warnings: [], IcyName: 'x' };
+                return sleep(body.Url.indexOf('slow') >= 0 ? 400 : 10).then(function () { return answer; });
+            }
+            if (path === 'Radio/Admin/Validate') {
+                calls.validate++;
+                // The server's format rule, enough for these checks.
+                return Promise.resolve(body.map(function (s) {
+                    return s.BitrateKbps && s.SampleRate && s.Channels ? [] : ['The stream format is missing. Press Test to measure it.'];
+                }));
+            }
+            return Promise.reject({ status: 404 });
+        }
+    };
+
+    function $(sel) { return document.querySelector(sel); }
+    function rows() { return Array.prototype.slice.call(document.querySelectorAll('.rd-station')); }
+    function rowBySlug(slug) { return rows().filter(function (r) { return r.textContent.indexOf(slug) >= 0; })[0]; }
+    function field(row, name) { return row.querySelector('[data-field="' + name + '"]'); }
+    function click(el) { el.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
+    function change(el) { el.dispatchEvent(new Event('change', { bubbles: true })); }
+    function stationIn(cfg, slug) { return cfg.Stations.filter(function (s) { return s.Slug === slug; })[0]; }
+
+    async function run() {
+        var r = {};
+        var source = await fetch('../../Jellyfin.Plugin.Radio/Web/configPage.html').then(function (x) { return x.text(); });
+        var doc = new DOMParser().parseFromString(source, 'text/html');
+        var pageEl = document.importNode(doc.querySelector('[data-role="page"]'), true);
+        var script = pageEl.querySelector('script');
+        script.parentNode.removeChild(script);
+        document.body.appendChild(pageEl);
+        var live = document.createElement('script');
+        live.textContent = script.textContent;
+        document.body.appendChild(live);
+
+        pageEl.dispatchEvent(new Event('pageshow'));
+        await sleep(100);
+        r.initialRows = rows().length;
+        r.adminLabelled = $('#RdUsers').textContent.indexOf('Hans (administrator)') >= 0;
+
+        // A name with quotes survives a re-render.
+        var first = rowBySlug('npo-radio-1');
+        field(first, 'Name').value = 'Radio "Een"';
+        change(field(first, 'Name'));
+        click(first.querySelector('[data-action="down"]'));
+        r.quotedName = field(rowBySlug('npo-radio-1'), 'Name').value;
+
+        // Test a slow station, then move it while the test runs: the result must land on it.
+        var slow = rowBySlug('npo-radio-2');
+        click(slow.querySelector('[data-action="probe"]'));
+        click(rowBySlug('npo-radio-2').querySelector('[data-action="down"]'));
+        await sleep(600);
+        r.probeTarget = rowBySlug('npo-radio-2').querySelector('.rd-format').textContent;
+        r.otherUntouched = rowBySlug('npo-radio-1').querySelector('.rd-format').textContent;
+
+        // Enter in the add fields adds (probes) instead of saving.
+        $('#RdNewName').value = 'Sky Radio';
+        $('#RdNewUrl').value = 'https://playerservices.streamtheworld.com/api/livestream-redirect/SKYRADIO.mp3';
+        var probesBefore = calls.probe.length;
+        $('#RdNewName').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await sleep(100);
+        r.enterProbed = calls.probe.length - probesBefore;
+        r.enterSaved = calls.update.length;
+        r.rowsAfterAdd = rows().length;
+        r.addedSlug = !!rowBySlug('sky-radio');
+
+        // Save: first save stores DefaultsLoaded and the list.
+        $('#RadioConfigForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        await sleep(100);
+        r.saves = calls.update.length;
+        var saved = calls.update[calls.update.length - 1] || { Stations: [] };
+        r.savedDefaultsLoaded = saved.DefaultsLoaded;
+        r.savedOrder = saved.Stations.map(function (s) { return s.Slug; });
+        r.savedQuotedName = (stationIn(saved, 'npo-radio-1') || {}).Name;
+
+        // Changing a URL clears the format, and Save is refused until it is tested.
+        var q = rowBySlug('qmusic');
+        field(q, 'StreamUrl').value = 'https://stream.qmusic.nl/qmusic/aachigh';
+        change(field(q, 'StreamUrl'));
+        r.formatAfterUrlChange = rowBySlug('qmusic').querySelector('.rd-format').textContent;
+        var savesBefore = calls.update.length;
+        $('#RadioConfigForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        await sleep(100);
+        r.saveRefused = calls.update.length === savesBefore;
+        r.refusalAlert = calls.alerts[calls.alerts.length - 1] || '';
+
+        // Unticking Enabled on a saved station asks first; "Cancel" keeps it enabled.
+        confirmAnswer = false;
+        var confirmsBefore = calls.confirms.length;
+        var box = field(rowBySlug('npo-radio-1'), 'Enabled');
+        box.checked = false;
+        change(box);
+        r.disableAsked = calls.confirms.length - confirmsBefore;
+        r.disableKept = field(rowBySlug('npo-radio-1'), 'Enabled').checked;
+
+        // Ticking an administrator under "Hide the channel from" asks first.
+        var adminBox = document.querySelector('.rd-user[data-admin="1"]');
+        adminBox.checked = true;
+        change(adminBox);
+        r.adminAsked = calls.confirms.length - confirmsBefore - 1;
+        r.adminKeptUnticked = !adminBox.checked;
+
+        r.errors = errors;
+        return r;
+    }
+
+    run().then(function (r) {
+        $('#result').textContent = JSON.stringify(r);
+    }, function (e) {
+        $('#result').textContent = 'RUNNER FAILED: ' + (e && e.stack || e) + ' errors=' + JSON.stringify(errors);
+    });
+</script>
+</body>
+</html>
