@@ -10,6 +10,12 @@ namespace Jellyfin.Plugin.Radio.Configuration;
 /// </summary>
 public class PluginConfiguration : BasePluginConfiguration
 {
+    /// <summary>The default name of the national folder, as the (Dutch) apps show it.</summary>
+    public const string DefaultNationalFolderName = "Landelijk";
+
+    /// <summary>The default name of the regional folder.</summary>
+    public const string DefaultRegionalFolderName = "Regionaal";
+
     /// <summary>
     /// Gets or sets a value indicating whether the built-in Dutch station list has been
     /// copied into <see cref="Stations"/>. Until then the built-in list is used as is, so
@@ -29,6 +35,15 @@ public class PluginConfiguration : BasePluginConfiguration
     public List<StationConfig> Stations { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets the name of the folder with the national stations. The apps show the
+    /// folders only when both categories have stations. Empty means the default.
+    /// </summary>
+    public string NationalFolderName { get; set; } = DefaultNationalFolderName;
+
+    /// <summary>Gets or sets the name of the folder with the regional stations. Empty means the default.</summary>
+    public string RegionalFolderName { get; set; } = DefaultRegionalFolderName;
+
+    /// <summary>
     /// Gets or sets the users who do not see the Radio channel, for example a living-room
     /// Android TV account (that app cannot play channel audio). This hides the channel
     /// view only; access to the stations themselves follows Jellyfin's channel permission.
@@ -44,4 +59,15 @@ public class PluginConfiguration : BasePluginConfiguration
     /// reached over http while a station redirects to https.
     /// </summary>
     public bool RelayThroughServer { get; set; }
+
+    /// <summary>Returns the folder name for a category, or its default when the setting is blank.</summary>
+    /// <param name="category">The category.</param>
+    /// <returns>The trimmed folder name.</returns>
+    public string FolderName(StationCategory category)
+    {
+        var (name, fallback) = category == StationCategory.Regional
+            ? (RegionalFolderName, DefaultRegionalFolderName)
+            : (NationalFolderName, DefaultNationalFolderName);
+        return string.IsNullOrWhiteSpace(name) ? fallback : name.Trim();
+    }
 }

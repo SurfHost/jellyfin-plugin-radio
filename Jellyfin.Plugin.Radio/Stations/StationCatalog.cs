@@ -64,10 +64,11 @@ public static class StationCatalog
         ArgumentNullException.ThrowIfNull(station);
         return Hash(string.Join(
             '\n',
-            "v1",
+            "v2",
             station.Slug,
             station.Name,
             station.Group,
+            station.Category.ToString(),
             station.StreamUrl,
             station.LogoUrl,
             station.BitrateKbps.ToString(CultureInfo.InvariantCulture),
@@ -87,6 +88,22 @@ public static class StationCatalog
     {
         ArgumentNullException.ThrowIfNull(playable);
         return Hash(string.Join('\n', playable.Select(s => StationHash(s, relayThroughServer))));
+    }
+
+    /// <summary>
+    /// Hash of everything the channel lists: the stations and the folder names. Used as the
+    /// channel's data version and cache key.
+    /// </summary>
+    /// <param name="config">The plugin configuration.</param>
+    /// <returns>A short hex hash.</returns>
+    public static string ListingHash(PluginConfiguration config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        return Hash(string.Join(
+            '\n',
+            CatalogHash(Playable(config), config.RelayThroughServer),
+            config.FolderName(StationCategory.National),
+            config.FolderName(StationCategory.Regional)));
     }
 
     /// <summary>The line shown under the station name, e.g. "NPO · Live · MP3 192 kbps".</summary>

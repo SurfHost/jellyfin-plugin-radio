@@ -312,12 +312,30 @@ Spike build v0.0.x is installed by hand and never published in the manifest. It 
   items by `IsFolder,SortName` (legacy controllers/list.js, release-12.z), so the page order shows in the web app too.
 - **Listing cache:** RadioSync deletes `<cache>/channels/<channel id>` before each pass and lists the channel with `CancellationToken.None`,
   so a pass is never stopped half-way behind a fresh cache file.
-- **Channel folder guard:** the channel is flat, so `ChannelFolderGuard` (a global MVC action filter) answers 400 when the Radio channel
-  is asked for any folder but itself. Jellyfin 12.2 does not check that a requested folder belongs to the channel; the details were
-  reported to Jellyfin privately.
+- **Channel folder guard:** `ChannelFolderGuard` (a global MVC action filter) answers 400 when the Radio channel is asked for a folder
+  that is not its own (0.0.1-0.0.3: any folder), and since 0.0.4 also when another channel is asked for one of the Radio folders.
+  Jellyfin 12.2 does not check that a requested folder belongs to the channel.
 - **Relay option** only sets `IsRemote = false`, which stops the `/Audio/{id}/universal` redirect (Android Auto). Desktop (mpv) and the Cast
   receiver use `Path` directly either way; the web, Android and iOS apps never ask for the redirect (no RemoteAudio feature). The label says so.
 - **Disabling = removing:** a disabled station is no longer listed, so Jellyfin deletes its item (playlist entries lost; user data parked
   for 90 days). The page warns on both actions.
 - **Validator** also refuses control characters: Jellyfin resets a plugin's whole configuration, silently, when its XML cannot be read back.
 - **Logo changes** set the image's DateModified, so the image tag changes and apps that cached the old logo for a year fetch the new one.
+
+## Implementation notes for 0.0.4
+
+- **Categories and folders.** `StationConfig.Category` is National or Regional. When the playable stations use both, the root lists two
+  Container folders (external ids `category-national`, `category-regional`, names from the settings, default "Landelijk"/"Regionaal")
+  and each folder lists its stations; with one category the root lists the stations (`ChannelLayout`). Jellyfin renames a Container folder
+  when its listed name changes (ChannelManager L1044-1052). RadioSync gives the folders a ForcedSortName so national comes first.
+- **Moving without deleting.** Listing a station under a new container re-parents it (L1090-1096), and listing a container deletes its
+  other children (L756-776); deleting a folder deletes its children. So a container also lists the playable stations Jellyfin still keeps
+  in it, and the root also lists a folder that still holds stations (`IChannelItemLocator` reads the current parent). Each move costs one
+  ParentId change, never a delete, in any listing order; `CategoryTests` replays upgrade, swap and back-to-flat against a model of
+  ChannelManager for every order of up to three app listings before the sync pass. RadioSync lists root, every existing folder, then
+  (after clearing the listing cache) the root again, which drops a folder that has become empty and unused.
+- **Built-in changes.** `Stations/BuiltInChanges.json` lists, per version, retired stations (removed while their stream URL is still the
+  built-in one) and old names/logos (replaced only where the admin kept the old value). Lists older than 0.0.4 also get the built-in
+  category of each built-in station. 0.0.4 retires NPO Blend, NPO Sterren NL and Sky Radio Hits, renames 538 Non-Stop to Radio 538
+  Non-Stop (so it sorts next to Radio 538 by name, too) and Sky Radio Non-Stop@Work to Sky Radio Non-Stop, and replaces 11 logos with
+  square, opaque ones (the station's own CDN, Mediahuis' radio API, Contentful, Wikimedia Commons for Omroep Brabant).

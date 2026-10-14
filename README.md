@@ -29,13 +29,15 @@ refuses it. This plugin makes stations real audio items instead.
 
 ## Features
 
-- **54 Dutch stations built in**, 41 switched on: NPO (Radio 1, 2, 3FM, Klassiek, 5, Blend, Sterren NL, FunX), national commercial stations
+- **51 Dutch stations built in**, 38 switched on: NPO (Radio 1, 2, 3FM, Klassiek, 5, FunX), national commercial stations
   (538, Qmusic, Sky Radio, Radio 10, Veronica, 100% NL, SLAM!, Sublime, KINK, Arrow, JOE, Decibel, BNR), their non-stop channels
-  (538, Qmusic, Sky Radio Hits and Non-Stop@Work, Radio 10, 100% NL, SLAM!, JOE) and 12 regional public broadcasters.
+  (538, Qmusic, Sky Radio, Radio 10, 100% NL, SLAM!, JOE) and 12 regional public broadcasters.
   Every stream was checked and its format measured on 2026-10-13.
+- **Two folders.** The channel shows the national stations in a folder **Landelijk** and the regional broadcasters in **Regionaal**.
+  Each station has a category on the plugin page; the folder names can be changed there too. With one category in use, the list is flat.
 - **Your own stations.** Paste a stream URL, press **Test and add**: the plugin checks that it is a live MP3 stream and measures its format.
   StreamTheWorld node URLs are replaced by the stable redirect URL; playlists (.m3u, .pls) and AAC streams are refused with an explanation.
-- **Edit freely.** Rename, reorder (the apps follow the page's order), change logos and stream URLs. Favourites and playlists survive,
+- **Edit freely.** Rename, reorder (the apps follow the page's order), change the category, logos and stream URLs. Favourites and playlists survive,
   because a station's identity is its id, not its name or URL. Disabling or removing a station deletes its item, and with it its
   playlist entries; favourites come back if the same station returns within 90 days.
 - **Diagnostics.** **Test** shows, for each station, the item and media source Jellyfin would serve, and which users cannot see the channel.

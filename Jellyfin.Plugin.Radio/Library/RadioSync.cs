@@ -43,11 +43,11 @@ public sealed class SyncReport
 }
 
 /// <summary>
-/// Keeps the station items in step with the settings. Jellyfin creates, updates and
-/// deletes channel items itself when the channel is listed, but it sets an item's name
-/// and text only when the item is new, and its image only when it has none. So after
-/// listing the channel this pass applies renames, order and new logos to existing items.
-/// Runs 30 seconds after startup, after every settings change, and every 6 hours.
+/// Keeps the station items in step with the settings. Jellyfin creates, moves, updates and
+/// deletes channel items itself when the channel and its folders are listed, but it sets
+/// an item's name and text only when the item is new, and its image only when it has none.
+/// So after listing the channel this pass applies renames, order and new logos to existing
+/// items. Runs 30 seconds after startup, after every settings change, and every 6 hours.
 /// </summary>
 public sealed class RadioSync : BackgroundService
 {
@@ -119,7 +119,9 @@ public sealed class RadioSync : BackgroundService
     /// <summary>
     /// Brings the built-in stations into the settings. On first start it copies the whole
     /// built-in list, so the plugin page shows what the channel publishes. After an update
-    /// it adds the built-in stations that are new since the list was last merged (see
+    /// it applies the built-in list's removals, renames, logos and categories to the
+    /// stations the admin has not changed (see <see cref="DefaultStations.ApplyChangesTo"/>)
+    /// and adds the built-in stations that are new since the list was last merged (see
     /// <see cref="DefaultStations.MergeNewInto"/>).
     /// </summary>
     /// <param name="config">The settings, changed in place.</param>
@@ -145,11 +147,31 @@ public sealed class RadioSync : BackgroundService
         }
 
         config.Stations ??= new List<StationConfig>();
+        var changes = DefaultStations.ApplyChangesTo(config.Stations, config.DefaultsVersion);
         var added = DefaultStations.MergeNewInto(config.Stations, config.DefaultsVersion);
         config.DefaultsVersion = latest;
-        return added > 0
-            ? "added " + added.ToString(CultureInfo.InvariantCulture) + " new built-in stations"
-            : "built-in station list is up to date";
+        var done = new List<string>();
+        if (changes.Removed > 0)
+        {
+            done.Add("removed " + changes.Removed.ToString(CultureInfo.InvariantCulture) + " retired built-in stations");
+        }
+
+        if (changes.Updated > 0)
+        {
+            done.Add("updated the name or logo of " + changes.Updated.ToString(CultureInfo.InvariantCulture) + " built-in stations");
+        }
+
+        if (changes.Categorized > 0)
+        {
+            done.Add("put " + changes.Categorized.ToString(CultureInfo.InvariantCulture) + " built-in stations in their category");
+        }
+
+        if (added > 0)
+        {
+            done.Add("added " + added.ToString(CultureInfo.InvariantCulture) + " new built-in stations");
+        }
+
+        return done.Count > 0 ? string.Join(", ", done) : "built-in station list is up to date";
     }
 
     /// <summary>Runs one pass now.</summary>
@@ -248,7 +270,7 @@ public sealed class RadioSync : BackgroundService
 
         // Creates the channel's own entity if Jellyfin has not done so yet.
         await _channelManager.GetChannelsInternalAsync(new ChannelQuery()).ConfigureAwait(false);
-        var channelId = _libraryManager.GetNewItemId(RadioChannel.ChannelIdKey(), typeof(MediaBrowser.Controller.Channels.Channel));
+        var channelId = ChannelItemLocator.ChannelId(_libraryManager);
         if (_libraryManager.GetItemById(channelId) is not MediaBrowser.Controller.Channels.Channel)
         {
             report.Error = "The Radio channel is not registered with Jellyfin.";
@@ -261,17 +283,40 @@ public sealed class RadioSync : BackgroundService
         // folder holds only this listing cache; item data lives elsewhere.
         ClearListingCache(channelId);
 
-        // Listing the channel makes Jellyfin create new station items, re-save changed
-        // ones and delete the ones no longer listed.
-        await _channelManager.GetChannelItemsInternal(
-            new InternalItemsQuery { ChannelIds = new[] { channelId }, EnableTotalRecordCount = false },
-            new Progress<double>(),
-            cancellationToken).ConfigureAwait(false);
+        // Listing the channel and its folders makes Jellyfin create new items, move
+        // stations to their folder, re-save changed ones and delete the ones no longer
+        // listed. A station stays listed where it is until it has moved (ChannelLayout),
+        // so moving never deletes it.
+        await ListAsync(channelId, Guid.Empty, cancellationToken).ConfigureAwait(false);
+        foreach (var folder in ChannelLayout.Folders)
+        {
+            var folderId = ChannelItemLocator.FolderId(_libraryManager, folder);
+            if (_libraryManager.GetItemById(folderId) is Folder)
+            {
+                await ListAsync(channelId, folderId, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        // Once the stations have moved, list the root again: a folder that has become
+        // empty and unused is dropped.
+        ClearListingCache(channelId);
+        await ListAsync(channelId, Guid.Empty, cancellationToken).ConfigureAwait(false);
+
+        var config = Plugin.Config;
+        for (var index = 0; index < ChannelLayout.Folders.Count; index++)
+        {
+            var folder = ChannelLayout.Folders[index];
+            if (_libraryManager.GetItemById(ChannelItemLocator.FolderId(_libraryManager, folder)) is Folder item
+                && await PatchFolderAsync(item, index, config.FolderName(ChannelLayout.CategoryOf(folder)!.Value), cancellationToken).ConfigureAwait(false))
+            {
+                report.Updated++;
+            }
+        }
 
         for (var position = 0; position < stations.Count; position++)
         {
             var station = stations[position];
-            var id = _libraryManager.GetNewItemId(RadioChannel.ItemIdKey(station.Slug), typeof(Audio));
+            var id = ChannelItemLocator.StationId(_libraryManager, station.Slug);
             if (_libraryManager.GetItemById(id) is not Audio item)
             {
                 report.Missing.Add(station.Slug);
@@ -299,6 +344,12 @@ public sealed class RadioSync : BackgroundService
         return report;
     }
 
+    private Task ListAsync(Guid channelId, Guid parentId, CancellationToken cancellationToken) =>
+        _channelManager.GetChannelItemsInternal(
+            new InternalItemsQuery { ChannelIds = new[] { channelId }, ParentId = parentId, EnableTotalRecordCount = false },
+            new Progress<double>(),
+            cancellationToken);
+
     private void ClearListingCache(Guid channelId)
     {
         var folder = Path.Combine(_applicationPaths.CachePath, "channels", channelId.ToString("N", CultureInfo.InvariantCulture));
@@ -313,6 +364,20 @@ public sealed class RadioSync : BackgroundService
         {
             _logger.LogWarning(ex, "Radio: could not clear the channel listing cache {Folder}.", folder);
         }
+    }
+
+    // Jellyfin names a folder itself; this keeps national before regional whatever the names.
+    private async Task<bool> PatchFolderAsync(Folder item, int position, string name, CancellationToken cancellationToken)
+    {
+        var sortName = SortNameFor(position, name);
+        if (string.Equals(item.ForcedSortName, sortName, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        item.ForcedSortName = sortName;
+        await _libraryManager.UpdateItemAsync(item, item.GetParent(), ItemUpdateType.MetadataEdit, cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     private async Task<bool> PatchAsync(Audio item, StationConfig station, int position, CancellationToken cancellationToken)

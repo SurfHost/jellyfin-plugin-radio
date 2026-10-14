@@ -41,4 +41,18 @@ public static class ChannelItemFactory
             MediaSources = new List<MediaSourceInfo> { MediaSourceFactory.Create(station, relayThroughServer) }
         };
     }
+
+    /// <summary>Creates the channel item for one of the category folders.</summary>
+    /// <param name="folder">The folder's external id (<see cref="ChannelLayout.Folders"/>).</param>
+    /// <param name="name">The folder name shown in the apps.</param>
+    /// <returns>The channel item.</returns>
+    public static ChannelItemInfo CreateFolder(string folder, string name) => new()
+    {
+        // Jellyfin hashes the id into the folder's item id, and renames a container
+        // folder whenever its listed name changes.
+        Id = folder,
+        Name = name,
+        Type = ChannelItemType.Folder,
+        FolderType = ChannelFolderType.Container
+    };
 }

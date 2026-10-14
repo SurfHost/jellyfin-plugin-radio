@@ -18,10 +18,10 @@
     window.confirm = function (text) { calls.confirms.push(text); return confirmAnswer; };
 
     function station(slug, name, url) {
-        return { Slug: slug, Name: name, Group: 'G', StreamUrl: url, LogoUrl: '', BitrateKbps: 192, SampleRate: 48000, Channels: 2, Enabled: true };
+        return { Slug: slug, Name: name, Group: 'G', Category: 'National', StreamUrl: url, LogoUrl: '', BitrateKbps: 192, SampleRate: 48000, Channels: 2, Enabled: true };
     }
 
-    var config = { DefaultsLoaded: false, Stations: [], ExcludedUserIds: [], RelayThroughServer: false };
+    var config = { DefaultsLoaded: false, Stations: [], ExcludedUserIds: [], RelayThroughServer: false, NationalFolderName: 'Landelijk', RegionalFolderName: 'Regionaal' };
     var defaults = [
         station('npo-radio-1', 'NPO Radio 1', 'https://icecast.omroep.nl/radio1-bb-mp3'),
         station('npo-radio-2', 'NPO Radio 2', 'https://slow.example/radio2'),
@@ -163,6 +163,28 @@
         change(adminBox);
         r.adminAsked = calls.confirms.length - confirmsBefore - 1;
         r.adminKeptUnticked = !adminBox.checked;
+
+        // The stations are grouped by category; a new category moves a station to the other group.
+        function titles() { return Array.prototype.map.call(document.querySelectorAll('.rd-group-title'), function (h) { return h.textContent; }); }
+        r.groupTitles = titles();
+        var category = field(rowBySlug('npo-radio-2'), 'Category');
+        category.value = 'Regional';
+        change(category);
+        r.orderAfterCategory = rows().map(function (row) { return row.querySelector('code').textContent; });
+        r.groupTitlesAfter = titles();
+        r.lastNationalDownDisabled = rowBySlug('sky-radio').querySelector('[data-action="down"]').disabled;
+        r.firstRegionalUpDisabled = rowBySlug('npo-radio-2').querySelector('[data-action="up"]').disabled;
+
+        // Test Qmusic again so the list is valid, rename a folder and save.
+        click(rowBySlug('qmusic').querySelector('[data-action="probe"]'));
+        await sleep(100);
+        $('#RdNationalName').value = 'National';
+        $('#RadioConfigForm').dispatchEvent(new Event('submit', { cancelable: true }));
+        await sleep(100);
+        var last = calls.update[calls.update.length - 1] || { Stations: [] };
+        r.savedCategory = (stationIn(last, 'npo-radio-2') || {}).Category;
+        r.savedOrderAfterCategory = last.Stations.map(function (s) { return s.Slug; });
+        r.savedFolderNames = [last.NationalFolderName, last.RegionalFolderName];
 
         r.errors = errors;
         return r;

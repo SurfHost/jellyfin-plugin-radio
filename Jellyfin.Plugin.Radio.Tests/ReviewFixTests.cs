@@ -15,24 +15,38 @@ public class ReviewFixTests
 {
     private static readonly Guid Radio = Guid.NewGuid();
 
+    private static readonly Guid[] RadioFolders = { Guid.NewGuid(), Guid.NewGuid() };
+
     [Fact]
     public void GuardRefusesAForeignFolderUnderTheRadioChannel()
     {
-        Assert.True(ChannelFolderGuard.IsBlocked(Radio, Guid.NewGuid(), Radio));
+        Assert.True(ChannelFolderGuard.IsBlocked(Radio, Guid.NewGuid(), Radio, RadioFolders));
     }
 
     [Fact]
     public void GuardAllowsTheRootListing()
     {
-        Assert.False(ChannelFolderGuard.IsBlocked(Radio, null, Radio));
-        Assert.False(ChannelFolderGuard.IsBlocked(Radio, Guid.Empty, Radio));
-        Assert.False(ChannelFolderGuard.IsBlocked(Radio, Radio, Radio));
+        Assert.False(ChannelFolderGuard.IsBlocked(Radio, null, Radio, RadioFolders));
+        Assert.False(ChannelFolderGuard.IsBlocked(Radio, Guid.Empty, Radio, RadioFolders));
+        Assert.False(ChannelFolderGuard.IsBlocked(Radio, Radio, Radio, RadioFolders));
+    }
+
+    [Fact]
+    public void GuardAllowsTheRadioFolders()
+    {
+        Assert.All(RadioFolders, folder => Assert.False(ChannelFolderGuard.IsBlocked(Radio, folder, Radio, RadioFolders)));
+    }
+
+    [Fact]
+    public void GuardRefusesARadioFolderUnderAnotherChannel()
+    {
+        Assert.True(ChannelFolderGuard.IsBlocked(Guid.NewGuid(), RadioFolders[1], Radio, RadioFolders));
     }
 
     [Fact]
     public void GuardLeavesOtherChannelsAlone()
     {
-        Assert.False(ChannelFolderGuard.IsBlocked(Guid.NewGuid(), Guid.NewGuid(), Radio));
+        Assert.False(ChannelFolderGuard.IsBlocked(Guid.NewGuid(), Guid.NewGuid(), Radio, RadioFolders));
     }
 
     [Fact]

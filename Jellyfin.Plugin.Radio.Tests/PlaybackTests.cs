@@ -109,6 +109,8 @@ public class PlaybackTests
         // ChannelManager.GetIdToHash: externalId + channel name + "16"; GetInternalChannelId: "Channel " + name.
         Assert.Equal("Radio", RadioChannel.ChannelName);
         Assert.Equal("npo-radio-2Radio16", RadioChannel.ItemIdKey("npo-radio-2"));
+        Assert.Equal("category-nationalRadio16", RadioChannel.ItemIdKey(ChannelLayout.NationalFolder));
+        Assert.Equal("category-regionalRadio16", RadioChannel.ItemIdKey(ChannelLayout.RegionalFolder));
         Assert.Equal("Channel Radio", RadioChannel.ChannelIdKey());
     }
 
@@ -124,20 +126,32 @@ public class PlaybackTests
     }
 
     [Fact]
-    public async Task ListsTheBuiltInStationsOnAFreshInstall()
+    public async Task ListsTheBuiltInStationsInTwoFoldersOnAFreshInstall()
     {
         var directory = Path.Combine(Path.GetTempPath(), "radio-test-" + Guid.NewGuid().ToString("N"));
         try
         {
-            var channel = new RadioChannel(new StationStateStore(directory, NullLogger<StationStateStore>.Instance), NullLogger<RadioChannel>.Instance);
+            var channel = Channel(directory);
 
-            var result = await channel.GetChannelItems(new InternalChannelItemQuery(), CancellationToken.None);
+            var root = await channel.GetChannelItems(new InternalChannelItemQuery(), CancellationToken.None);
+            Assert.Equal(new[] { ChannelLayout.NationalFolder, ChannelLayout.RegionalFolder }, root.Items.Select(i => i.Id));
+            Assert.Equal(new[] { "Landelijk", "Regionaal" }, root.Items.Select(i => i.Name));
+            Assert.All(root.Items, i =>
+            {
+                Assert.Equal(ChannelItemType.Folder, i.Type);
+                Assert.Equal(ChannelFolderType.Container, i.FolderType);
+            });
 
-            Assert.Equal(41, result.Items.Count);
-            Assert.Equal(41, result.TotalRecordCount);
-            Assert.Equal("npo-radio-1", result.Items[0].Id);
-            Assert.All(result.Items, i => Assert.Equal(DateTimeKind.Utc, i.DateModified.Kind));
+            var national = await channel.GetChannelItems(new InternalChannelItemQuery { FolderId = ChannelLayout.NationalFolder }, CancellationToken.None);
+            Assert.Equal(26, national.Items.Count);
+            Assert.Equal(26, national.TotalRecordCount);
+            Assert.Equal("npo-radio-1", national.Items[0].Id);
+            Assert.All(national.Items, i => Assert.Equal(DateTimeKind.Utc, i.DateModified.Kind));
             Assert.True(File.Exists(Path.Combine(directory, "state.json")));
+
+            var regional = await channel.GetChannelItems(new InternalChannelItemQuery { FolderId = ChannelLayout.RegionalFolder }, CancellationToken.None);
+            Assert.Equal(12, regional.Items.Count);
+            Assert.Equal("nh-radio", regional.Items[0].Id);
 
             var folder = await channel.GetChannelItems(new InternalChannelItemQuery { FolderId = "anything" }, CancellationToken.None);
             Assert.Empty(folder.Items);
@@ -154,7 +168,7 @@ public class PlaybackTests
     [Fact]
     public void ChannelDescribesItself()
     {
-        var channel = new RadioChannel(new StationStateStore(Path.GetTempPath(), NullLogger<StationStateStore>.Instance), NullLogger<RadioChannel>.Instance);
+        var channel = Channel(Path.GetTempPath());
         var features = channel.GetChannelFeatures();
         Assert.Equal(new[] { ChannelMediaType.Audio }, features.MediaTypes);
         Assert.Equal(new[] { ChannelMediaContentType.Song }, features.ContentTypes);
@@ -165,17 +179,28 @@ public class PlaybackTests
     [Fact]
     public async Task ChannelImageIsThePng()
     {
-        var channel = new RadioChannel(new StationStateStore(Path.GetTempPath(), NullLogger<StationStateStore>.Instance), NullLogger<RadioChannel>.Instance);
+        var channel = Channel(Path.GetTempPath());
         var image = await channel.GetChannelImage(ImageType.Primary, CancellationToken.None);
         Assert.True(image.HasImage);
         Assert.NotNull(image.Stream);
         await image.Stream.DisposeAsync();
     }
 
+    // A channel whose stations have no Jellyfin item yet.
+    private static RadioChannel Channel(string directory) => new(
+        new StationStateStore(directory, NullLogger<StationStateStore>.Instance),
+        new NoItems(),
+        NullLogger<RadioChannel>.Instance);
+
     [Fact]
     public void StationsAreListedOnce()
     {
         var slugs = StationCatalog.Playable(new Configuration.PluginConfiguration()).Select(s => s.Slug).ToList();
         Assert.Equal(slugs.Count, slugs.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    private sealed class NoItems : IChannelItemLocator
+    {
+        public string? LocationOf(string slug) => null;
     }
 }

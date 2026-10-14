@@ -46,8 +46,9 @@ Dashboard → Users → *user*:
 
 ## 4. Listen
 
-- **Web, Desktop, Android, iOS:** Home → **My Media** → **Radio**, pick a station. Mark stations as favourite (heart) to find them quickly.
-  The apps list the stations in the order of the plugin page.
+- **Web, Desktop, Android, iOS:** Home → **My Media** → **Radio** → **Landelijk** or **Regionaal**, pick a station. Mark stations as
+  favourite (heart) to find them quickly. Within a folder the apps list the stations in the order of the plugin page. The folder names
+  can be changed on the plugin page under **Folders**; with stations in one category only, the channel shows them without folders.
 - **Android TV:** the Android TV app only plays local audio files, so the channel does not work there. Hide it from that account with
   **Hide the channel from** on the plugin page. Do not tick an administrator you use in the dashboard: Radio would then disappear from
   every user's Access tab, and saving a user there would remove their access to it.

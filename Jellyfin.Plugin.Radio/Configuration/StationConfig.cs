@@ -15,6 +15,9 @@ public class StationConfig
     /// <summary>Gets or sets a short group label shown with the station, e.g. <c>NPO</c> or <c>Regionaal</c>.</summary>
     public string Group { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the folder the station is listed in: national or regional.</summary>
+    public StationCategory Category { get; set; } = StationCategory.National;
+
     /// <summary>
     /// Gets or sets the stream URL: a direct MP3 stream over http(s), or a stable redirect
     /// to one (StreamTheWorld <c>livestream-redirect</c>, <c>stream.qmusic.nl</c>). Never a

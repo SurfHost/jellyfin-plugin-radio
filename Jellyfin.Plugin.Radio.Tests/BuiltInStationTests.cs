@@ -12,9 +12,9 @@ namespace Jellyfin.Plugin.Radio.Tests;
 public class BuiltInStationTests
 {
     [Fact]
-    public void LatestVersionIsTheNewestAddition()
+    public void LatestVersionIsTheNewestChange()
     {
-        Assert.Equal("0.0.2", DefaultStations.LatestVersion);
+        Assert.Equal("0.0.4", DefaultStations.LatestVersion);
     }
 
     [Fact]
@@ -25,8 +25,8 @@ public class BuiltInStationTests
         Assert.NotNull(RadioSync.ApplyBuiltInStations(config));
 
         Assert.True(config.DefaultsLoaded);
-        Assert.Equal(54, config.Stations.Count);
-        Assert.Equal("0.0.2", config.DefaultsVersion);
+        Assert.Equal(51, config.Stations.Count);
+        Assert.Equal("0.0.4", config.DefaultsVersion);
         Assert.Null(RadioSync.ApplyBuiltInStations(config));
     }
 
@@ -37,14 +37,14 @@ public class BuiltInStationTests
 
         var change = RadioSync.ApplyBuiltInStations(config);
 
-        Assert.Equal("added 10 new built-in stations", change);
+        Assert.Equal("added 9 new built-in stations", change);
         var slugs = config.Stations.Select(s => s.Slug).ToList();
         Assert.Equal(slugs.IndexOf("qmusic") + 1, slugs.IndexOf("qmusic-non-stop"));
         Assert.Equal(slugs.IndexOf("radio-538") + 1, slugs.IndexOf("538-non-stop"));
-        Assert.Equal(slugs.IndexOf("sky-radio-hits") + 1, slugs.IndexOf("sky-radio-non-stop-at-work"));
+        Assert.Equal(slugs.IndexOf("sky-radio") + 1, slugs.IndexOf("sky-radio-non-stop-at-work"));
         Assert.Equal(slugs.IndexOf("joe") + 1, slugs.IndexOf("joe-non-stop"));
         Assert.Equal("my-station", slugs[^1]);
-        Assert.Equal("0.0.2", config.DefaultsVersion);
+        Assert.Equal("0.0.4", config.DefaultsVersion);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class BuiltInStationTests
     public void MergingTwiceAddsNothing()
     {
         var stations = Legacy001Config().Stations;
-        Assert.Equal(10, DefaultStations.MergeNewInto(stations, string.Empty));
+        Assert.Equal(9, DefaultStations.MergeNewInto(stations, string.Empty));
         Assert.Equal(0, DefaultStations.MergeNewInto(stations, string.Empty));
     }
 
@@ -88,7 +88,7 @@ public class BuiltInStationTests
     {
         var incoming = new PluginConfiguration { DefaultsLoaded = true };
         Plugin.StampDefaultsVersion(new PluginConfiguration(), incoming);
-        Assert.Equal("0.0.2", incoming.DefaultsVersion);
+        Assert.Equal("0.0.4", incoming.DefaultsVersion);
     }
 
     [Fact]

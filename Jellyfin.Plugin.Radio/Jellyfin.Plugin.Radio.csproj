@@ -6,9 +6,9 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Jellyfin.Plugin.Radio</RootNamespace>
     <AssemblyName>Jellyfin.Plugin.Radio</AssemblyName>
-    <Version>0.0.3</Version>
-    <AssemblyVersion>0.0.3</AssemblyVersion>
-    <FileVersion>0.0.3</FileVersion>
+    <Version>0.0.4</Version>
+    <AssemblyVersion>0.0.4</AssemblyVersion>
+    <FileVersion>0.0.4</FileVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -32,7 +32,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Web\**\*.html" />
-    <EmbeddedResource Include="Stations\DefaultStations.json" />
+    <EmbeddedResource Include="Stations\*.json" />
     <EmbeddedResource Include="Images\*.png" />
   </ItemGroup>
 

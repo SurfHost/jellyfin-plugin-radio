@@ -76,6 +76,16 @@ def main():
         ("Save is refused for an untested URL", r.get("saveRefused") is True and "problems" in (r.get("refusalAlert") or ""), (r.get("saveRefused"), r.get("refusalAlert"))),
         ("disabling a saved station asks first", r.get("disableAsked") == 1 and r.get("disableKept") is True, (r.get("disableAsked"), r.get("disableKept"))),
         ("hiding from an administrator asks first", r.get("adminAsked") == 1 and r.get("adminKeptUnticked") is True, (r.get("adminAsked"), r.get("adminKeptUnticked"))),
+        ("stations are grouped by category", r.get("groupTitles") == ["National (5)", "Regional (0)"], r.get("groupTitles")),
+        ("a new category moves the station to that group",
+         r.get("orderAfterCategory") == ["npo-radio-1", "qmusic", "qmusic-non-stop", "sky-radio", "npo-radio-2"]
+         and r.get("groupTitlesAfter") == ["National (4)", "Regional (1)"], (r.get("orderAfterCategory"), r.get("groupTitlesAfter"))),
+        ("moving stays within a group", r.get("lastNationalDownDisabled") is True and r.get("firstRegionalUpDisabled") is True,
+         (r.get("lastNationalDownDisabled"), r.get("firstRegionalUpDisabled"))),
+        ("Save stores the category in group order",
+         r.get("savedCategory") == "Regional" and r.get("savedOrderAfterCategory") == ["npo-radio-1", "qmusic", "qmusic-non-stop", "sky-radio", "npo-radio-2"],
+         (r.get("savedCategory"), r.get("savedOrderAfterCategory"))),
+        ("Save stores the folder names", r.get("savedFolderNames") == ["National", "Regionaal"], r.get("savedFolderNames")),
     ]
     failed = 0
     for name, ok, seen in checks:

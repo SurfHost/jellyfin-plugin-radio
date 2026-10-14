@@ -15,8 +15,10 @@ public class StationTests
     {
         var stations = DefaultStations.Load();
 
-        Assert.Equal(54, stations.Count);
-        Assert.Equal(41, stations.Count(s => s.Enabled));
+        Assert.Equal(51, stations.Count);
+        Assert.Equal(38, stations.Count(s => s.Enabled));
+        Assert.Equal(12, stations.Count(s => s.Category == StationCategory.Regional));
+        Assert.All(stations.Where(s => s.Category == StationCategory.Regional), s => Assert.Equal("Regionaal", s.Group));
         Assert.Equal(stations.Count, stations.Select(s => s.Slug).Distinct(StringComparer.Ordinal).Count());
         Assert.All(StationValidator.ValidateAll(stations), errors => Assert.Empty(errors));
         Assert.All(stations, s =>
@@ -30,13 +32,16 @@ public class StationTests
 
         // Stopped on 2026-09-01; its mounts answer 404.
         Assert.DoesNotContain(stations, s => s.StreamUrl.Contains("radio6", StringComparison.Ordinal));
+
+        // Retired from the list in 0.0.4 at the owner's request.
+        Assert.DoesNotContain(stations, s => s.Slug is "npo-blend" or "npo-sterren-nl" or "sky-radio-hits");
         Assert.Equal("npo-radio-1", stations[0].Slug);
     }
 
     [Theory]
     [InlineData("538-non-stop", "radio-538")]
     [InlineData("qmusic-non-stop", "qmusic")]
-    [InlineData("sky-radio-hits", "sky-radio")]
+    [InlineData("sky-radio-non-stop-at-work", "sky-radio")]
     [InlineData("radio-10-non-stop", "radio-10")]
     [InlineData("100-nl-non-stop", "100-nl")]
     [InlineData("slam-non-stop", "slam")]
@@ -116,8 +121,8 @@ public class StationTests
     public void UsesTheBuiltInListUntilTheDefaultsAreLoaded()
     {
         var config = new PluginConfiguration();
-        Assert.Equal(54, StationCatalog.Configured(config).Count);
-        Assert.Equal(41, StationCatalog.Playable(config).Count);
+        Assert.Equal(51, StationCatalog.Configured(config).Count);
+        Assert.Equal(38, StationCatalog.Playable(config).Count);
 
         config.DefaultsLoaded = true;
         Assert.Empty(StationCatalog.Configured(config));
@@ -155,6 +160,7 @@ public class StationTests
         {
             s => s.Name = "Other",
             s => s.Group = "Other",
+            s => s.Category = StationCategory.Regional,
             s => s.StreamUrl = "https://example.com/other.mp3",
             s => s.LogoUrl = "https://example.com/other.png",
             s => s.BitrateKbps = 128,

@@ -65,9 +65,35 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         if (configuration is PluginConfiguration incoming)
         {
             StampDefaultsVersion(Configuration, incoming);
+            incoming.NationalFolderName = CleanFolderName(incoming.NationalFolderName);
+            incoming.RegionalFolderName = CleanFolderName(incoming.RegionalFolderName);
         }
 
         base.UpdateConfiguration(configuration);
+    }
+
+    /// <summary>
+    /// Trims a folder name to at most 60 characters. A name with a character the settings
+    /// XML cannot hold becomes empty (the default name): Jellyfin silently resets all
+    /// settings when it cannot read the file back.
+    /// </summary>
+    /// <param name="name">The name as entered.</param>
+    /// <returns>The name to store.</returns>
+    public static string CleanFolderName(string? name)
+    {
+        var text = (name ?? string.Empty).Trim();
+        if (Stations.StationValidator.HasInvalidCharacters(text))
+        {
+            return string.Empty;
+        }
+
+        if (text.Length <= 60)
+        {
+            return text;
+        }
+
+        // Never cut an emoji (a surrogate pair) in half.
+        return text[..(char.IsHighSurrogate(text[59]) ? 59 : 60)].TrimEnd();
     }
 
     /// <summary>

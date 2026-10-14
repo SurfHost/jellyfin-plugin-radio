@@ -1,0 +1,77 @@
+[
+  {
+    "version": "0.0.4",
+    "slug": "npo-blend",
+    "remove": true,
+    "ifStreamUrl": "https://icecast.omroep.nl/npoblend-bb-mp3"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "npo-sterren-nl",
+    "remove": true,
+    "ifStreamUrl": "https://icecast.omroep.nl/radio2-sterrennl-mp3"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "sky-radio-hits",
+    "remove": true,
+    "ifStreamUrl": "https://playerservices.streamtheworld.com/api/livestream-redirect/SRGSTR01.mp3"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "538-non-stop",
+    "ifName": "538 Non-Stop",
+    "ifLogoUrl": "https://ctfimages.talparad.io/2AIuJh6rcNAFWaDbH3cKEg/2048835da3011e2b76633a94bf56c558/538_512x512.jpg"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "qmusic",
+    "ifLogoUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Qmusic_logo.svg/330px-Qmusic_logo.svg.png"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "qmusic-non-stop",
+    "ifLogoUrl": "https://cdn-radio.dpgmedia.net/3/76/93/cf/23/2Site-logo-_220x220_.png"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "sky-radio-non-stop-at-work",
+    "ifName": "Sky Radio Non-Stop@Work",
+    "ifLogoUrl": "https://ctfimages.talparad.io/THnBtZH5I5RABCOp9WPpI/0d5fa4e65d6fd1e3e9d349088fecaed3/Sky_radio_-_512x512.jpg"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "radio-veronica",
+    "ifLogoUrl": ""
+  },
+  {
+    "version": "0.0.4",
+    "slug": "100-nl",
+    "ifLogoUrl": ""
+  },
+  {
+    "version": "0.0.4",
+    "slug": "slam",
+    "ifLogoUrl": ""
+  },
+  {
+    "version": "0.0.4",
+    "slug": "sublime",
+    "ifLogoUrl": ""
+  },
+  {
+    "version": "0.0.4",
+    "slug": "arrow-classic-rock",
+    "ifLogoUrl": "https://www.arrow.nl/wp-content/themes/bones-master/library/images/apple-touch-icon.png"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "bnr-nieuwsradio",
+    "ifLogoUrl": "https://static.bnr.nl/assets/bnr-next/logo.png"
+  },
+  {
+    "version": "0.0.4",
+    "slug": "omroep-brabant",
+    "ifLogoUrl": ""
+  }
+]

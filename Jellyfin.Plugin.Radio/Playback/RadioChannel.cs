@@ -15,8 +15,9 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.Radio.Playback;
 
 /// <summary>
-/// The "Radio" channel: one flat list of live stations. Jellyfin turns each station into
-/// an Audio item and plays it in its music player, in every app that shows channels.
+/// The "Radio" channel: live stations, in a folder per category (national, regional) when
+/// both are in use. Jellyfin turns each station into an Audio item and plays it in its
+/// music player, in every app that shows channels.
 /// </summary>
 public sealed class RadioChannel : IChannel, IHasCacheKey
 {
@@ -30,14 +31,17 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
     public const string ItemIdSuffix = "16";
 
     private readonly StationStateStore _state;
+    private readonly IChannelItemLocator _locator;
     private readonly ILogger<RadioChannel> _logger;
 
     /// <summary>Initializes a new instance of the <see cref="RadioChannel"/> class.</summary>
     /// <param name="state">The publish state store.</param>
+    /// <param name="locator">Finds where Jellyfin keeps each station.</param>
     /// <param name="logger">The logger.</param>
-    public RadioChannel(StationStateStore state, ILogger<RadioChannel> logger)
+    public RadioChannel(StationStateStore state, IChannelItemLocator locator, ILogger<RadioChannel> logger)
     {
         _state = state;
+        _locator = locator;
         _logger = logger;
     }
 
@@ -56,9 +60,9 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
     /// <inheritdoc />
     public ChannelParentalRating ParentalRating => ChannelParentalRating.GeneralAudience;
 
-    /// <summary>The key Jellyfin hashes into a station's item id (ChannelManager.GetIdToHash in 12.2).</summary>
-    /// <param name="slug">The station slug.</param>
-    /// <returns>The key for ILibraryManager.GetNewItemId with typeof(Audio).</returns>
+    /// <summary>The key Jellyfin hashes into a channel item's id (ChannelManager.GetIdToHash in 12.2).</summary>
+    /// <param name="slug">The station slug, or a folder's external id.</param>
+    /// <returns>The key for ILibraryManager.GetNewItemId with typeof(Audio), or typeof(Folder) for a folder.</returns>
     public static string ItemIdKey(string slug) => slug + ChannelName + ItemIdSuffix;
 
     /// <summary>The key Jellyfin hashes into the channel's own id (ChannelManager.GetInternalChannelId).</summary>
@@ -86,9 +90,10 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
     public async Task<ChannelItemResult> GetChannelItems(InternalChannelItemQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (!string.IsNullOrEmpty(query.FolderId))
+        var container = query.FolderId ?? ChannelLayout.Root;
+        if (container != ChannelLayout.Root && ChannelLayout.CategoryOf(container) is null)
         {
-            // The list is flat; there are no folders to open.
+            // Not one of this channel's folders.
             return new ChannelItemResult { TotalRecordCount = 0 };
         }
 
@@ -100,8 +105,12 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
             .ToList();
         var modified = await _state.TouchAsync(hashes, DateTime.UtcNow, cancellationToken).ConfigureAwait(false);
 
-        var items = stations.Select(s => ChannelItemFactory.Create(s, modified[s.Slug], relay)).ToList();
-        _logger.LogDebug("Radio: listing {Count} stations.", items.Count);
+        var listing = ChannelLayout.List(container, stations, _locator.LocationOf);
+        var items = listing.Folders
+            .Select(f => ChannelItemFactory.CreateFolder(f, config.FolderName(ChannelLayout.CategoryOf(f)!.Value)))
+            .Concat(listing.Stations.Select(s => ChannelItemFactory.Create(s, modified[s.Slug], relay)))
+            .ToList();
+        _logger.LogDebug("Radio: listing {Folders} folders and {Stations} stations in '{Container}'.", listing.Folders.Count, listing.Stations.Count, container);
         return new ChannelItemResult { Items = items, TotalRecordCount = items.Count };
     }
 
@@ -122,9 +131,5 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
     /// <inheritdoc />
     public string? GetCacheKey(string? userId) => CurrentHash();
 
-    private static string CurrentHash()
-    {
-        var config = Plugin.Config;
-        return StationCatalog.CatalogHash(StationCatalog.Playable(config), config.RelayThroughServer);
-    }
+    private static string CurrentHash() => StationCatalog.ListingHash(Plugin.Config);
 }

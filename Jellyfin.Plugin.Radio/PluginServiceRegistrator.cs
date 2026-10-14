@@ -20,12 +20,14 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         _ = applicationHost;
 
+        serviceCollection.AddSingleton<IChannelItemLocator, ChannelItemLocator>();
+
         // Since Jellyfin 10.9 channels are found through dependency injection only.
         // Without this line the plugin installs and loads, and the channel never appears,
         // with nothing in the log.
         serviceCollection.AddSingleton<IChannel, RadioChannel>();
 
-        // The Radio channel has no folders; refuse requests for one (see ChannelFolderGuard).
+        // Refuse channel listings under a folder that is not the channel's own (see ChannelFolderGuard).
         serviceCollection.AddSingleton<ChannelFolderGuard>();
         serviceCollection.Configure<MvcOptions>(options => options.Filters.AddService<ChannelFolderGuard>());
 
