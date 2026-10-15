@@ -9,6 +9,14 @@
     "imageUrl": "https://raw.githubusercontent.com/SurfHost/jellyfin-plugin-radio/main/logo.png",
     "versions": [
       {
+        "version": "0.0.5",
+        "changelog": "New per-station option \"Skip the ad at the start\". Qmusic, JOE and their non-stop channels play an ad of 10 to 20 seconds before the live stream; the ad comes from the stations' own stream server. With the option ticked, the station plays through your Jellyfin server, which drops that ad. You hear a few seconds of silence instead, and usually nothing at all: the stream server plays its ad to your server only once in a while. Ads in the programme itself stay. The option is off by default. With the option on, every app gets the station from your Jellyfin server, Jellyfin Desktop and Cast included, so your server streams each listener. The server must be able to reach itself over plain HTTP; with \"Require HTTPS\" on (Dashboard > Networking) the station plays as before, with its ad. The Test button checks this. While a station plays through the server, the plugin reads its song titles from the stream. Test shows what is playing; showing it in the apps comes later.",
+        "targetAbi": "12.2.0.0",
+        "sourceUrl": "https://github.com/SurfHost/jellyfin-plugin-radio/releases/download/v0.0.5/radio_0.0.5.zip",
+        "checksum": "f70c9fbc910ad3d2f4feb9a80bc46325",
+        "timestamp": "2026-10-15T01:34:25Z"
+      },
+      {
         "version": "0.0.4",
         "changelog": "Stations now have a category, national or regional. With stations in both categories, the Radio channel shows two folders, \"Landelijk\" and \"Regionaal\"; rename them on the plugin page under Folders. The 12 regional broadcasters go into the regional folder by themselves. Existing stations move into their folder without being deleted, so favourites and playlist entries keep working. The plugin page groups the stations by category. Pick another category on a station to move it to that group; Move up and Move down work within a group. Removed from the built-in list: NPO Blend, NPO Sterren NL and Sky Radio Hits. The update removes them from your list too, unless you gave them a different stream URL. Renamed: \"538 Non-Stop\" is now \"Radio 538 Non-Stop\", so it sits next to Radio 538 in apps that sort by name. \"Sky Radio Non-Stop@Work\" is now \"Sky Radio Non-Stop\". New logos for Qmusic, Qmusic Non-Stop, Radio 538 Non-Stop, Sky Radio Non-Stop, Radio Veronica, 100% NL, SLAM!, Sublime, Omroep Brabant, Arrow Classic Rock and BNR Nieuwsradio. They are square images that also read on a dark background. The update replaces a built-in name or logo only where you kept the old one: names and logos you changed yourself stay. The channel accepts listings under its own folders only, and refuses its folders under any other channel.",
         "targetAbi": "12.2.0.0",
