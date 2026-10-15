@@ -40,6 +40,13 @@ public class StationConfig
     /// <summary>Gets or sets a value indicating whether the station is listed.</summary>
     public bool Enabled { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the station plays through the server, which
+    /// drops the ad its stream server plays before the live stream (Qmusic, JOE). Every
+    /// app then gets the station from this server instead of from the station.
+    /// </summary>
+    public bool SkipPreroll { get; set; }
+
     /// <summary>Returns a member-wise copy.</summary>
     /// <returns>The copy.</returns>
     public StationConfig Clone() => (StationConfig)MemberwiseClone();

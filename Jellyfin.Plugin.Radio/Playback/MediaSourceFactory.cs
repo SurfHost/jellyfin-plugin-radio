@@ -17,8 +17,12 @@ public static class MediaSourceFactory
     /// <summary>Creates the media source for a playable station.</summary>
     /// <param name="station">A playable (validated, normalized) station.</param>
     /// <param name="relayThroughServer">Whether clients must get the stream through the server.</param>
+    /// <param name="relayPath">
+    /// The plugin's relay address for a station with "skip the ad at the start" on
+    /// (<see cref="Relay.RelayAddress"/>), or null to point at the station itself.
+    /// </param>
     /// <returns>The media source.</returns>
-    public static MediaSourceInfo Create(StationConfig station, bool relayThroughServer)
+    public static MediaSourceInfo Create(StationConfig station, bool relayThroughServer, string? relayPath = null)
     {
         var bitrate = station.BitrateKbps * 1000;
         return new MediaSourceInfo
@@ -29,15 +33,18 @@ public static class MediaSourceFactory
             Name = station.Name,
 
             // The stable URL. For StreamTheWorld and DPG this is a redirect that every
-            // player follows itself; the rotating node it lands on is never stored.
-            Path = station.StreamUrl,
+            // player follows itself; the rotating node it lands on is never stored. A
+            // relayed station points at the relay on 127.0.0.1 instead, which only the
+            // server fetches (RelayPlaybackFilter keeps the apps from opening it).
+            Path = relayPath ?? station.StreamUrl,
             Protocol = MediaProtocol.Http,
             Type = MediaSourceType.Default,
             Container = "mp3",
 
             // Remote: an app that can fetch remote media gets a redirect to the station and
             // fetches it itself. Jellyfin Web cannot, and is proxied by the server anyway.
-            IsRemote = !relayThroughServer,
+            // Never for the relay: a redirect to 127.0.0.1 would fail on the app's device.
+            IsRemote = !relayThroughServer && relayPath is null,
             IsInfiniteStream = true,
             RunTimeTicks = null,
 
@@ -49,7 +56,8 @@ public static class MediaSourceFactory
             SupportsTranscoding = false,
 
             // No ffprobe of an endless stream, no live-stream opening (channel sources
-            // cannot be opened), no extra headers (they would stop Cast from direct play).
+            // cannot be opened), no extra headers (Jellyfin 12.2 sends only User-Agent
+            // upstream, and the apps ignore them).
             SupportsProbing = false,
             RequiresOpening = false,
             RequiresClosing = false,

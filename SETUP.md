@@ -71,6 +71,21 @@ Plugin page → **Add a station**: name, stream URL, optional group and logo, th
 - **Disabling or removing a station deletes its item** when you save. Its playlist entries are lost for good; favourites come back if the
   same station (same id) returns within 90 days.
 
+## 6. Skip the ad at the start
+
+Qmusic, JOE, Qmusic Non-Stop and JOE Non-Stop play an ad of 10 to 20 seconds before the live stream. The ad comes from their
+stream server, which marks it in the stream. Tick **Skip the ad at the start** on those stations and press **Save**:
+
+- The station then plays through your Jellyfin server. The server drops the ad and plays silence meanwhile; the music starts after a
+  few seconds instead of after the ad. The stream server plays its ad to your server only once in a while, so most starts have no
+  ad at all: the music starts within about two seconds (about four in Android Auto).
+- Every app gets the station from your server, also Jellyfin Desktop and Cast. Your server streams each listener (128 kbit/s).
+- Ads in the programme itself stay: they are part of the live stream.
+- The server fetches the stream from itself over plain HTTP. With **Require HTTPS** on (Dashboard → Networking) that is not possible,
+  and the station plays as before, with its ad. Press **Test**: it reports whether the stations play through the server.
+- The other built-in stations (538, Sky Radio, Radio 10, Veronica, 100% NL, SLAM!, NPO, the regional stations) start without an ad;
+  the option does nothing useful for them.
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
@@ -83,3 +98,4 @@ Plugin page → **Add a station**: name, stream URL, optional group and logo, th
 | Android TV skips through all stations | Expected: the Android TV app only plays local audio files. See "Android TV" in step 4. |
 | New built-in stations missing after an update | Restart Jellyfin after updating the plugin; from 0.0.3 on, new built-in stations are added at start-up. |
 | One station silent, others fine | The broadcaster changed its stream. Plugin page → **Test** on that station shows the error; replace the URL. |
+| Qmusic or JOE still starts with an ad | Tick **Skip the ad at the start** on that station and save. If Test says the server cannot reach its own relay, see step 6. |

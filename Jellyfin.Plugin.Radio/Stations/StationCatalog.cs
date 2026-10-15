@@ -58,13 +58,14 @@ public static class StationCatalog
     /// </summary>
     /// <param name="station">A playable station.</param>
     /// <param name="relayThroughServer">The relay setting, which changes the media source.</param>
+    /// <param name="relayPath">The relay address of a station that skips its pre-roll ad, else null.</param>
     /// <returns>A short hex hash.</returns>
-    public static string StationHash(StationConfig station, bool relayThroughServer)
+    public static string StationHash(StationConfig station, bool relayThroughServer, string? relayPath = null)
     {
         ArgumentNullException.ThrowIfNull(station);
         return Hash(string.Join(
             '\n',
-            "v2",
+            "v3",
             station.Slug,
             station.Name,
             station.Group,
@@ -74,7 +75,9 @@ public static class StationCatalog
             station.BitrateKbps.ToString(CultureInfo.InvariantCulture),
             station.SampleRate.ToString(CultureInfo.InvariantCulture),
             station.Channels.ToString(CultureInfo.InvariantCulture),
-            relayThroughServer ? "relay" : "direct"));
+            relayThroughServer ? "relay" : "direct",
+            station.SkipPreroll ? "skip-preroll" : "as-is",
+            relayPath ?? string.Empty));
     }
 
     /// <summary>

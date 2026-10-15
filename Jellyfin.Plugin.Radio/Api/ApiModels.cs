@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Jellyfin.Plugin.Radio.Library;
+using Jellyfin.Plugin.Radio.Relay;
 
 namespace Jellyfin.Plugin.Radio.Api;
 
@@ -52,6 +53,15 @@ public sealed class StationCheckDto
 
     /// <summary>Gets or sets what went wrong while asking Jellyfin for the sources.</summary>
     public string PlaybackError { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether the station skips its pre-roll ad (plays through the relay).</summary>
+    public bool SkipPreroll { get; set; }
+
+    /// <summary>Gets or sets the result of the server calling its own relay for this station (HEAD; the station is not contacted). Empty when not relayed.</summary>
+    public string RelayCheck { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether that call succeeded.</summary>
+    public bool RelayOk { get; set; }
 }
 
 /// <summary>Result of the plugin page's Test button.</summary>
@@ -86,4 +96,10 @@ public sealed class TestReportDto
 
     /// <summary>Gets or sets the per-user settings.</summary>
     public IReadOnlyList<UserAccessDto> Users { get; set; } = Array.Empty<UserAccessDto>();
+
+    /// <summary>Gets or sets why this server cannot relay stations, or an empty string.</summary>
+    public string RelayProblem { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the song titles the relay has seen, newest first.</summary>
+    public IReadOnlyList<NowPlayingEntry> NowPlaying { get; set; } = Array.Empty<NowPlayingEntry>();
 }

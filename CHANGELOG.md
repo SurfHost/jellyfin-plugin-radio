@@ -3,6 +3,12 @@
 All notable changes to this plugin are listed here. Versions follow MAJOR.MINOR.PATCH;
 the GitHub release for a version carries the section below as its notes.
 
+## [0.0.5] - 2026-10-15
+
+- New per-station option "Skip the ad at the start". Qmusic, JOE and their non-stop channels play an ad of 10 to 20 seconds before the live stream; the ad comes from the stations' own stream server. With the option ticked, the station plays through your Jellyfin server, which drops that ad. You hear a few seconds of silence instead, and usually nothing at all: the stream server plays its ad to your server only once in a while. Ads in the programme itself stay. The option is off by default.
+- With the option on, every app gets the station from your Jellyfin server, Jellyfin Desktop and Cast included, so your server streams each listener. The server must be able to reach itself over plain HTTP; with "Require HTTPS" on (Dashboard > Networking) the station plays as before, with its ad. The Test button checks this.
+- While a station plays through the server, the plugin reads its song titles from the stream. Test shows what is playing; showing it in the apps comes later.
+
 ## [0.0.4] - 2026-10-14
 
 - Stations now have a category, national or regional. With stations in both categories, the Radio channel shows two folders, "Landelijk" and "Regionaal"; rename them on the plugin page under Folders. The 12 regional broadcasters go into the regional folder by themselves. Existing stations move into their folder without being deleted, so favourites and playlist entries keep working.

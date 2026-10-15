@@ -194,7 +194,8 @@ public static class DefaultStations
                 BitrateKbps = r.BitrateKbps,
                 SampleRate = r.SampleRate,
                 Channels = r.Channels,
-                Enabled = r.Enabled
+                Enabled = r.Enabled,
+                SkipPreroll = r.SkipPreroll
             },
             Version.Parse(string.IsNullOrWhiteSpace(r.AddedIn) ? FirstVersion : r.AddedIn))).ToList();
     }
@@ -247,6 +248,8 @@ public static class DefaultStations
         public int Channels { get; set; }
 
         public bool Enabled { get; set; } = true;
+
+        public bool SkipPreroll { get; set; }
 
         public string AddedIn { get; set; } = string.Empty;
     }

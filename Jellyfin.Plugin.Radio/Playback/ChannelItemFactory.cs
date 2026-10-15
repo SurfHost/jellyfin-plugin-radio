@@ -15,8 +15,9 @@ public static class ChannelItemFactory
     /// <param name="station">A playable (validated, normalized) station.</param>
     /// <param name="modifiedUtc">When the station's published content last changed.</param>
     /// <param name="relayThroughServer">Whether clients must get the stream through the server.</param>
+    /// <param name="relayPath">The relay address when the station skips its pre-roll ad, else null.</param>
     /// <returns>The channel item.</returns>
-    public static ChannelItemInfo Create(StationConfig station, DateTime modifiedUtc, bool relayThroughServer)
+    public static ChannelItemInfo Create(StationConfig station, DateTime modifiedUtc, bool relayThroughServer, string? relayPath = null)
     {
         ArgumentNullException.ThrowIfNull(station);
         return new ChannelItemInfo
@@ -38,7 +39,7 @@ public static class ChannelItemFactory
             // Jellyfin re-saves an existing item (stream URL, media source) only when this
             // date moves forward.
             DateModified = modifiedUtc,
-            MediaSources = new List<MediaSourceInfo> { MediaSourceFactory.Create(station, relayThroughServer) }
+            MediaSources = new List<MediaSourceInfo> { MediaSourceFactory.Create(station, relayThroughServer, relayPath) }
         };
     }
 

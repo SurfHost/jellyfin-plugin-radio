@@ -175,9 +175,13 @@
         r.lastNationalDownDisabled = rowBySlug('sky-radio').querySelector('[data-action="down"]').disabled;
         r.firstRegionalUpDisabled = rowBySlug('npo-radio-2').querySelector('[data-action="up"]').disabled;
 
-        // Test Qmusic again so the list is valid, rename a folder and save.
+        // Test Qmusic again so the list is valid, tick "skip the ad", rename a folder and save.
         click(rowBySlug('qmusic').querySelector('[data-action="probe"]'));
         await sleep(100);
+        var skip = field(rowBySlug('qmusic'), 'SkipPreroll');
+        r.skipBoxUnticked = skip && !skip.checked;
+        skip.checked = true;
+        change(skip);
         $('#RdNationalName').value = 'National';
         $('#RadioConfigForm').dispatchEvent(new Event('submit', { cancelable: true }));
         await sleep(100);
@@ -185,6 +189,7 @@
         r.savedCategory = (stationIn(last, 'npo-radio-2') || {}).Category;
         r.savedOrderAfterCategory = last.Stations.map(function (s) { return s.Slug; });
         r.savedFolderNames = [last.NationalFolderName, last.RegionalFolderName];
+        r.savedSkip = [(stationIn(last, 'qmusic') || {}).SkipPreroll, (stationIn(last, 'npo-radio-1') || {}).SkipPreroll];
 
         r.errors = errors;
         return r;

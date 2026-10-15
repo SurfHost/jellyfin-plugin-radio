@@ -86,6 +86,8 @@ def main():
          r.get("savedCategory") == "Regional" and r.get("savedOrderAfterCategory") == ["npo-radio-1", "qmusic", "qmusic-non-stop", "sky-radio", "npo-radio-2"],
          (r.get("savedCategory"), r.get("savedOrderAfterCategory"))),
         ("Save stores the folder names", r.get("savedFolderNames") == ["National", "Regionaal"], r.get("savedFolderNames")),
+        ("Skip the ad starts unticked and is saved per station",
+         r.get("skipBoxUnticked") is True and r.get("savedSkip") == [True, False], (r.get("skipBoxUnticked"), r.get("savedSkip"))),
     ]
     failed = 0
     for name, ok, seen in checks:

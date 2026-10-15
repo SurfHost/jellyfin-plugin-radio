@@ -55,7 +55,7 @@ Path = canonical URL (icecast.omroep.nl/...-bb-mp3, playerservices.streamtheworl
        stream.qmusic.nl/qmusic/mp3, stream.joe.nl/joe/mp3, ...) - never a rotating STW node
 Protocol=Http, Type=Default, Container="mp3", IsRemote = !RelayThroughServer (default true), IsInfiniteStream=true, RunTimeTicks=null,
 SupportsDirectPlay=true, SupportsDirectStream=true, SupportsTranscoding=false (not authoritative: server overwrites it from the user's permission),
-SupportsProbing=false, RequiresOpening=false, RequiredHttpHeaders empty (keeps Cast direct play), Bitrate set, DefaultAudioStreamIndex=0,
+SupportsProbing=false, RequiresOpening=false, RequiredHttpHeaders empty (12.2 forwards only User-Agent upstream, and jellyfin-web and the Cast receiver test `.length` on what is a JSON object, so headers never steer a client), Bitrate set, DefaultAudioStreamIndex=0,
 MediaStreams=[{Type=Audio, Index=0, Codec="mp3", BitRate, SampleRate, Channels=2, IsDefault=true}]
 ```
   - The audio stream avoids the `StreamBuilder` ThrowIfNull and the forced remote probe (MediaSourceManager.cs L183-195).
@@ -339,3 +339,52 @@ Spike build v0.0.x is installed by hand and never published in the manifest. It 
   category of each built-in station. 0.0.4 retires NPO Blend, NPO Sterren NL and Sky Radio Hits, renames 538 Non-Stop to Radio 538
   Non-Stop (so it sorts next to Radio 538 by name, too) and Sky Radio Non-Stop@Work to Sky Radio Non-Stop, and replaces 11 logos with
   square, opaque ones (the station's own CDN, Mediahuis' radio API, Contentful, Wikimedia Commons for Omroep Brabant).
+
+## Implementation notes for 0.0.5: skipping the pre-roll ad
+
+- **What the ad is.** DPG's stream server (`Server: Qmusic NL - AIS 9.1.2`, AdsWizz) inserts an ad of 10-20 s for every new listener and
+  marks it in the ICY metadata: `StreamTitle='';adw_ad='true';durationMilliseconds='15024';adId='8907';insertionType='preroll';`. The
+  next block carries the song title. It sends the ad about twice as fast as real time. One complete ad per listener (address plus user
+  agent) in a while: a second connection minutes later starts live. Dropping the connection and reconnecting does not help (each attempt
+  got a new ad; only a complete ad counts). Every Qmusic/JOE MP3 URL ends on that server; the old triple-it hosts redirect to it.
+  StreamTheWorld streams (Talpa, Mediahuis, BNR), NPO and the regional streams start without an ad. Measured 2026-10-15.
+- **Relay.** `GET /Radio/Stream/{slug}?k=<key>` (RelayController, anonymous) opens the station with `Icy-MetaData: 1` and a fixed user
+  agent, so all listeners share one identity. `PrerollFilter` holds the first metadata block's audio until the metadata says whether
+  it is an ad, drops the announced ad (capped at its length plus 3 s when no end is marked), resyncs on two consecutive MP3 frame headers
+  and strips the metadata. `SilentFrame` writes all-zero Layer III frames in the station's format; the relay sends them from the first
+  millisecond, paced to the clock plus a 1 s head start (a pump tops up every 250 ms, so no app waits 8 s for data; overdue silence is
+  skipped, never piled up for a slow listener), until live audio arrives.
+- **Bit reservoir.** Layer III main data may start up to 511 bytes back in earlier frames. After the silent frames those bytes are
+  zeros, and the first live frames decoded as a full-scale noise burst (measured: three granules at 32768). The filter therefore mutes
+  (zeroes the side information of) each leading live frame whose main_data_begin reaches further back than the live data sent so far,
+  until 511 bytes are in; ffmpeg then decodes the splice exactly like a cold start of the live stream.
+- **Probes and failures.** Jellyfin turns an app's HEAD (htmlAudioPlayer sends one before every play) into a GET without a Range header,
+  and its HttpClient drains that response for up to 2 s before hanging up. A request without the players' open-ended `Range: bytes=0-`
+  therefore waits 2.5 s (in silence) before the station is called, so a probe never starts an ad; players start at once. The station
+  must answer within 15 s and never go quiet for 15 s; with no live audio 75 s after the start (or after an ad began) the relay ends.
+  When the relay ends before any live audio, the controller aborts the response, so the app reports an error instead of a short track.
+  Verified live: ad dropped, 6.2 s of silence, then live audio from a clean frame; ffmpeg decodes it without errors. Starts without an
+  ad: live after 1.5-2 s.
+- **Path and key.** The stored source has `Path = http://127.0.0.1:<HttpPort>/<BaseUrl>/Radio/Stream/<slug>?k=<key>` (built with
+  `GetLocalApiUrl("127.0.0.1", "http", HttpPort)`; 12.2 has no `GetLoopbackHttpApiUrl`) and `IsRemote = false`. The key is in the query
+  because `FileStreamResponseHelpers.GetStaticRemoteStreamResult` forwards only User-Agent and Range upstream. The key (HMAC of a random
+  secret in `<data>/radio/relay.key`) only stops the relay URL from serving someone who knows the address: signed-in users can read it
+  from PlaybackInfo, and the core `/Audio/{id}/stream` endpoint is anonymous, so a channel item can be streamed through Jellyfin by anyone
+  who can compute its id, relayed or not. When Jellyfin is bound to specific addresses without loopback, the first bound (non
+  link-local) address is used; with RequireHttps on (every http request, loopback too, is redirected to https) the station keeps its
+  direct source and Test says why. Bindings, the HTTPS redirect and BaseUrl are fixed at startup, so after changing them Jellyfin must be
+  restarted before the relay address is right again.
+- **Every app through the server.** Web, Android and iOS play audio through `/universal` and never see the source (playbackmanager's
+  getPlaybackInfo short-circuits audio for htmlAudioPlayer); with IsRemote=false the server streams Path itself, without a 302. Jellyfin
+  Desktop (mpvAudioPlayer, useServerPlaybackInfoForAudio) and the Cast receiver use PlaybackInfo and would open Path (the receiver
+  ignores IsRemote). `RelayPlaybackFilter`, a global MVC result filter on MediaInfo.GetPlaybackInfo/GetPostedPlaybackInfo, therefore
+  marks relayed sources SupportsDirectPlay=false, SupportsDirectStream=true, TranscodingUrl=null, so both build
+  `/Audio/{id}/stream.mp3?static=true&mediaSourceId=radio-<slug>` on the address they already use. Android Auto (universal with
+  enableRemoteMedia) gets no redirect for IsRemote=false sources; the 8 s ExoPlayer read timeout is met by the silence. DLNA uses the
+  server's stream endpoints.
+- **Known limits.** With IsRemote=false StreamBuilder applies its bitrate check: a client limit or Jellyfin's remote-client bitrate limit
+  below the station's bitrate sends users with audio transcoding permission to an ffmpeg transcode, which cannot play a live stream
+  (the same holds for the RelayThroughServer option). Each listener is its own station connection; a client HEAD costs no station
+  connection when it is a player's request ("Range: bytes=0-") and none when Jellyfin drops it within the 2.5 s probe delay. Other apps (Swiftfin, Finamp, Kodi, Streamyfin) were not checked.
+- **Now playing.** The relay records each song title (`NowPlayingStore`, memory only); Admin/Test lists them. Showing them in the apps
+  needs the Phase 5 script injection.

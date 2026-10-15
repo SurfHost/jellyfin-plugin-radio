@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Radio.Playback;
+using Jellyfin.Plugin.Radio.Relay;
 using Jellyfin.Plugin.Radio.Stations;
 using MediaBrowser.Controller.Channels;
 using MediaBrowser.Model.Channels;
@@ -187,9 +188,10 @@ public class PlaybackTests
     }
 
     // A channel whose stations have no Jellyfin item yet.
-    private static RadioChannel Channel(string directory) => new(
+    private static RadioChannel Channel(string directory, IRelayAddress? relay = null) => new(
         new StationStateStore(directory, NullLogger<StationStateStore>.Instance),
         new NoItems(),
+        relay ?? new FakeRelay(),
         NullLogger<RadioChannel>.Instance);
 
     [Fact]
@@ -202,5 +204,78 @@ public class PlaybackTests
     private sealed class NoItems : IChannelItemLocator
     {
         public string? LocationOf(string slug) => null;
+    }
+
+    private sealed class FakeRelay(bool reachable = true) : IRelayAddress
+    {
+        public string Problem => reachable ? string.Empty : "Jellyfin requires HTTPS.";
+
+        public string? For(string slug) => reachable ? RelayAddress.Build("http://127.0.0.1:8096", slug, "key-" + slug) : null;
+    }
+
+    [Fact]
+    public void ARelayedStationPointsAtTheRelayAndIsNeverRemote()
+    {
+        var station = StationTests.Valid();
+        station.SkipPreroll = true;
+        var path = RelayAddress.Build("http://127.0.0.1:8096/jf", station.Slug, "abc");
+
+        var source = MediaSourceFactory.Create(station, relayThroughServer: false, path);
+
+        Assert.Equal("http://127.0.0.1:8096/jf/Radio/Stream/npo-radio-2?k=abc", source.Path);
+        Assert.Equal("radio-npo-radio-2", source.Id);
+        Assert.False(source.IsRemote);
+        Assert.True(source.SupportsDirectPlay);
+        Assert.True(source.RequiredHttpHeaders is null || source.RequiredHttpHeaders.Count == 0);
+        Assert.True(RelayAddress.IsRelayed(source));
+        Assert.False(RelayAddress.IsRelayed(MediaSourceFactory.Create(station, false)));
+    }
+
+    [Fact]
+    public void PlaybackInfoSendsAppsThroughTheServerForRelayedStations()
+    {
+        var station = StationTests.Valid();
+        var relayed = MediaSourceFactory.Create(station, false, RelayAddress.Build("http://127.0.0.1:8096", station.Slug, "abc"));
+        relayed.TranscodingUrl = "/Audio/x/universal?transcode";
+        var direct = MediaSourceFactory.Create(StationTests.Valid("other"), false);
+        var response = new MediaBrowser.Model.MediaInfo.PlaybackInfoResponse { MediaSources = new[] { relayed, direct } };
+
+        Assert.Equal(1, RelayPlaybackFilter.Apply(response));
+
+        Assert.False(relayed.SupportsDirectPlay);
+        Assert.True(relayed.SupportsDirectStream);
+        Assert.False(relayed.SupportsTranscoding);
+        Assert.Null(relayed.TranscodingUrl);
+        Assert.True(direct.SupportsDirectPlay);
+    }
+
+    [Fact]
+    public async Task TheChannelPublishesTheRelayOnlyWhereTheServerCanReachIt()
+    {
+        var config = new Configuration.PluginConfiguration { DefaultsLoaded = true };
+        var station = StationTests.Valid();
+        station.SkipPreroll = true;
+        config.Stations.Add(station);
+        var directory = Path.Combine(Path.GetTempPath(), "radio-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var withRelay = Channel(directory);
+            withRelay.ConfigSource = () => config;
+            var reachable = await withRelay.GetChannelItems(new InternalChannelItemQuery(), CancellationToken.None);
+            Assert.Equal("http://127.0.0.1:8096/Radio/Stream/npo-radio-2?k=key-npo-radio-2", reachable.Items.Single().MediaSources[0].Path);
+
+            var withoutRelay = Channel(directory, new FakeRelay(reachable: false));
+            withoutRelay.ConfigSource = () => config;
+            var unreachable = await withoutRelay.GetChannelItems(new InternalChannelItemQuery(), CancellationToken.None);
+            Assert.Equal(station.StreamUrl, unreachable.Items.Single().MediaSources[0].Path);
+            Assert.True(unreachable.Items.Single().MediaSources[0].IsRemote);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, true);
+            }
+        }
     }
 }

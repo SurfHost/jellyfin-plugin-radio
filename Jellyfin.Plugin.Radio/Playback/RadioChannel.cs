@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Plugin.Radio.Configuration;
+using Jellyfin.Plugin.Radio.Relay;
 using Jellyfin.Plugin.Radio.Stations;
 using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Providers;
@@ -32,18 +34,24 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
 
     private readonly StationStateStore _state;
     private readonly IChannelItemLocator _locator;
+    private readonly IRelayAddress _relay;
     private readonly ILogger<RadioChannel> _logger;
 
     /// <summary>Initializes a new instance of the <see cref="RadioChannel"/> class.</summary>
     /// <param name="state">The publish state store.</param>
     /// <param name="locator">Finds where Jellyfin keeps each station.</param>
+    /// <param name="relay">The relay address of stations that skip their pre-roll ad.</param>
     /// <param name="logger">The logger.</param>
-    public RadioChannel(StationStateStore state, IChannelItemLocator locator, ILogger<RadioChannel> logger)
+    public RadioChannel(StationStateStore state, IChannelItemLocator locator, IRelayAddress relay, ILogger<RadioChannel> logger)
     {
         _state = state;
         _locator = locator;
+        _relay = relay;
         _logger = logger;
     }
+
+    /// <summary>Gets or sets where the settings come from (the plugin's; tests replace it).</summary>
+    internal Func<PluginConfiguration> ConfigSource { get; set; } = () => Plugin.Config;
 
     /// <inheritdoc />
     public string Name => ChannelName;
@@ -77,7 +85,7 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
     };
 
     /// <inheritdoc />
-    public bool IsEnabledFor(string userId) => IsEnabledFor(userId, Plugin.Config.ExcludedUserIds);
+    public bool IsEnabledFor(string userId) => IsEnabledFor(userId, ConfigSource().ExcludedUserIds);
 
     /// <summary>Returns false for a user the plugin hides the channel from.</summary>
     /// <param name="userId">The user id as Jellyfin passes it (32 hex digits).</param>
@@ -97,18 +105,28 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
             return new ChannelItemResult { TotalRecordCount = 0 };
         }
 
-        var config = Plugin.Config;
+        var config = ConfigSource();
         var stations = StationCatalog.Playable(config);
         var relay = config.RelayThroughServer;
+        // A station whose relay this server cannot reach plays straight from the station.
+        var relayPaths = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var station in stations.Where(s => s.SkipPreroll))
+        {
+            if (_relay.For(station.Slug) is { } path)
+            {
+                relayPaths[station.Slug] = path;
+            }
+        }
+
         var hashes = stations
-            .Select(s => new KeyValuePair<string, string>(s.Slug, StationCatalog.StationHash(s, relay)))
+            .Select(s => new KeyValuePair<string, string>(s.Slug, StationCatalog.StationHash(s, relay, relayPaths.GetValueOrDefault(s.Slug))))
             .ToList();
         var modified = await _state.TouchAsync(hashes, DateTime.UtcNow, cancellationToken).ConfigureAwait(false);
 
         var listing = ChannelLayout.List(container, stations, _locator.LocationOf);
         var items = listing.Folders
             .Select(f => ChannelItemFactory.CreateFolder(f, config.FolderName(ChannelLayout.CategoryOf(f)!.Value)))
-            .Concat(listing.Stations.Select(s => ChannelItemFactory.Create(s, modified[s.Slug], relay)))
+            .Concat(listing.Stations.Select(s => ChannelItemFactory.Create(s, modified[s.Slug], relay, relayPaths.GetValueOrDefault(s.Slug))))
             .ToList();
         _logger.LogDebug("Radio: listing {Folders} folders and {Stations} stations in '{Container}'.", listing.Folders.Count, listing.Stations.Count, container);
         return new ChannelItemResult { Items = items, TotalRecordCount = items.Count };
@@ -131,5 +149,5 @@ public sealed class RadioChannel : IChannel, IHasCacheKey
     /// <inheritdoc />
     public string? GetCacheKey(string? userId) => CurrentHash();
 
-    private static string CurrentHash() => StationCatalog.ListingHash(Plugin.Config);
+    private string CurrentHash() => StationCatalog.ListingHash(ConfigSource());
 }

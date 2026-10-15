@@ -58,6 +58,12 @@
                         Removing <i>or disabling</i> a station deletes its item when you save: playlist entries for it are lost for good.
                         Favourites come back if the same station (same id) returns within 90 days.
                     </p>
+                    <p class="fieldDescription">
+                        <b>Skip the ad at the start</b>: Qmusic and JOE (and their non-stop channels) play an ad of 10 to 20 seconds
+                        before the live stream. With this ticked, the station plays through this server, which drops that ad: you hear
+                        a few seconds of silence instead. Usually there is no ad at all, because the station plays its ad to the server
+                        only once in a while. Ads in the programme itself stay. Every app then gets the station from this server.
+                    </p>
                     <div id="RdStations"></div>
                 </div>
 
@@ -225,6 +231,7 @@
                     + '</div>'
                     + '<div class="rd-side">'
                     + '<label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" data-field="Enabled"' + (st.Enabled ? ' checked' : '') + ' /><span>Enabled</span></label>'
+                    + '<label class="checkboxContainer"><input is="emby-checkbox" type="checkbox" data-field="SkipPreroll"' + (st.SkipPreroll ? ' checked' : '') + ' /><span>Skip the ad at the start</span></label>'
                     + '<button is="emby-button" type="button" class="raised button-alt" data-action="probe"><span>Test</span></button>'
                     + '<button is="emby-button" type="button" class="raised button-alt" data-action="up"' + (first ? ' disabled' : '') + '><span>Move up</span></button>'
                     + '<button is="emby-button" type="button" class="raised button-alt" data-action="down"' + (last ? ' disabled' : '') + '><span>Move down</span></button>'
@@ -262,8 +269,8 @@
                 var st = stations[parseInt(row.getAttribute('data-index'), 10)];
                 Array.prototype.forEach.call(row.querySelectorAll('[data-field]'), function (input) {
                     var field = input.getAttribute('data-field');
-                    if (field === 'Enabled') {
-                        st.Enabled = input.checked;
+                    if (field === 'Enabled' || field === 'SkipPreroll') {
+                        st[field] = input.checked;
                         return;
                     }
                     var value = input.value.trim();
@@ -562,6 +569,19 @@
                     if (!u.IsDisabled && !u.Excluded) {
                         (u.Problems || []).forEach(function (p) { html += line(false, u.Name, p); });
                     }
+                });
+                if (r.RelayProblem) {
+                    html += line(false, 'Skip the ad at the start', r.RelayProblem + ' Those stations play with their ad.');
+                }
+                var relayed = published.filter(function (s) { return s.SkipPreroll && s.RelayCheck; });
+                if (relayed.length) {
+                    var broken = relayed.filter(function (s) { return !s.RelayOk; });
+                    html += line(!broken.length, 'Skip the ad at the start', (relayed.length - broken.length) + ' of ' + relayed.length + ' stations play through this server without their ad');
+                    broken.forEach(function (s) { html += line(false, s.Name, s.RelayCheck); });
+                }
+                (r.NowPlaying || []).forEach(function (n) {
+                    var st = (r.Stations || []).filter(function (s) { return s.Slug === n.Slug; })[0];
+                    html += '<div>Now playing on ' + esc(st ? st.Name : n.Slug) + ': ' + esc(n.Title) + '</div>';
                 });
                 if (r.LastSync) {
                     html += '<div>Last sync: ' + esc(new Date(r.LastSync.RanUtc).toLocaleString()) + ', ' + r.LastSync.Items + ' items, '

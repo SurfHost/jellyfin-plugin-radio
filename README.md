@@ -40,6 +40,9 @@ refuses it. This plugin makes stations real audio items instead.
 - **Edit freely.** Rename, reorder (the apps follow the page's order), change the category, logos and stream URLs. Favourites and playlists survive,
   because a station's identity is its id, not its name or URL. Disabling or removing a station deletes its item, and with it its
   playlist entries; favourites come back if the same station returns within 90 days.
+- **Skip the ad at the start.** Qmusic and JOE (and their non-stop channels) play an ad before the live stream. Tick
+  "Skip the ad at the start" on such a station and it plays through your Jellyfin server, which drops that ad: a few seconds of
+  silence instead, usually none at all. Off by default; ads in the programme itself stay.
 - **Diagnostics.** **Test** shows, for each station, the item and media source Jellyfin would serve, and which users cannot see the channel.
 
 ## Which apps
@@ -52,7 +55,7 @@ refuses it. This plugin makes stations real audio items instead.
 | Jellyfin for iOS | Expected to work (being verified). Swiftfin has no music player; use the Jellyfin app |
 | Android TV | Not via the channel: the app (0.19) plays only local audio files and skips every station. A Live TV copy (video player, black screen) is being tested |
 | Android Auto | Planned via a "Radio" playlist (being verified) |
-| Chromecast / Nest speakers / Nest Hub | Plays (verified from Edge to a Nest Hub Max). Connect to the Cast device **first**, then start the station: casting a station that is already playing makes the device wait as long as you had been listening |
+| Chromecast / Nest speakers / Nest Hub | Plays (verified from Edge to a Nest Hub Max). Connect to the Cast device **first**, then start the station: casting a station that is already playing makes the device wait as long as you had been listening. Stations with "Skip the ad at the start" reach the Cast device through your Jellyfin server |
 | Sonos via the DLNA plugin | Being verified |
 
 ## Requirements

@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Radio.Configuration;
 using Jellyfin.Plugin.Radio.Library;
 using Jellyfin.Plugin.Radio.Playback;
+using Jellyfin.Plugin.Radio.Relay;
 using Jellyfin.Plugin.Radio.Stations;
 using MediaBrowser.Common.Api;
 using MediaBrowser.Controller.Entities.Audio;
@@ -31,6 +34,9 @@ public sealed class RadioController : ControllerBase
     private readonly StreamProbe _probe;
     private readonly RadioSync _sync;
     private readonly UserAudit _audit;
+    private readonly IRelayAddress _relay;
+    private readonly NowPlayingStore _nowPlaying;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     /// <summary>Initializes a new instance of the <see cref="RadioController"/> class.</summary>
     /// <param name="libraryManager">The library manager.</param>
@@ -38,18 +44,27 @@ public sealed class RadioController : ControllerBase
     /// <param name="probe">The stream probe.</param>
     /// <param name="sync">The sync service.</param>
     /// <param name="audit">The user audit.</param>
+    /// <param name="relay">The relay address.</param>
+    /// <param name="nowPlaying">The song titles seen by the relay.</param>
+    /// <param name="httpClientFactory">The HttpClient factory.</param>
     public RadioController(
         ILibraryManager libraryManager,
         IMediaSourceManager mediaSourceManager,
         StreamProbe probe,
         RadioSync sync,
-        UserAudit audit)
+        UserAudit audit,
+        IRelayAddress relay,
+        NowPlayingStore nowPlaying,
+        IHttpClientFactory httpClientFactory)
     {
         _libraryManager = libraryManager;
         _mediaSourceManager = mediaSourceManager;
         _probe = probe;
         _sync = sync;
         _audit = audit;
+        _relay = relay;
+        _nowPlaying = nowPlaying;
+        _httpClientFactory = httpClientFactory;
     }
 
     /// <summary>Returns the built-in Dutch station list.</summary>
@@ -125,7 +140,9 @@ public sealed class RadioController : ControllerBase
             TestUser = user?.Username ?? string.Empty,
             RelayThroughServer = config.RelayThroughServer,
             LastSync = _sync.LastReport,
-            Users = _audit.Audit(channelId, config.ExcludedUserIds ?? Array.Empty<Guid>())
+            Users = _audit.Audit(channelId, config.ExcludedUserIds ?? Array.Empty<Guid>()),
+            RelayProblem = configured.Any(s => s.SkipPreroll && s.Enabled) ? _relay.Problem : string.Empty,
+            NowPlaying = _nowPlaying.All()
         };
 
         for (var i = 0; i < configured.Count; i++)
@@ -142,6 +159,12 @@ public sealed class RadioController : ControllerBase
             if (!published.ContainsKey(station.Slug ?? string.Empty))
             {
                 continue;
+            }
+
+            check.SkipPreroll = station.SkipPreroll;
+            if (station.SkipPreroll && _relay.For(station.Slug!) is { } relayPath)
+            {
+                (check.RelayOk, check.RelayCheck) = await CheckRelayAsync(relayPath, cancellationToken).ConfigureAwait(false);
             }
 
             check.ItemId = _libraryManager.GetNewItemId(RadioChannel.ItemIdKey(station.Slug!), typeof(Audio));
@@ -177,4 +200,27 @@ public sealed class RadioController : ControllerBase
     }
 
     private void NoStore() => Response.Headers.CacheControl = "no-store";
+
+    // The server calls its own relay the way it will during playback, but with HEAD, which
+    // the relay answers without contacting the station.
+    private async Task<(bool Ok, string Result)> CheckRelayAsync(string relayPath, CancellationToken cancellationToken)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Head, relayPath);
+            using var response = await _httpClientFactory.CreateClient(StreamProbe.HttpClientName)
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token)
+                .ConfigureAwait(false);
+            var type = response.Content.Headers.ContentType?.MediaType ?? string.Empty;
+            return response.IsSuccessStatusCode && string.Equals(type, "audio/mpeg", StringComparison.OrdinalIgnoreCase)
+                ? (true, "relay reachable")
+                : (false, "the relay answered HTTP " + ((int)response.StatusCode).ToString(CultureInfo.InvariantCulture) + (type.Length > 0 ? " " + type : string.Empty));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException && !cancellationToken.IsCancellationRequested)
+        {
+            return (false, "the server could not reach its own relay: " + ex.Message);
+        }
+    }
 }
